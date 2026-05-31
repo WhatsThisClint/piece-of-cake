@@ -161,9 +161,9 @@ def _print_json(value: object) -> None:
 
 def _package_version() -> str:
     try:
-        return version("piece-of-cake")
+        return version("piece-of-cake-terrain")
     except PackageNotFoundError:
-        return "0.1.0"
+        return "0.1.1"
 
 
 if __name__ == "__main__":

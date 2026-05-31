@@ -8,19 +8,19 @@ with the same arguments.
 ## Install From GitHub
 
 ```bash
-pip install "piece-of-cake[geo,places] @ git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.0"
+pip install "piece-of-cake-terrain[geo,places] @ git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.1"
 ```
 
 For an isolated command-line install:
 
 ```bash
-pipx install "git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.0#egg=piece-of-cake[geo,places]"
+pipx install "git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.1#egg=piece-of-cake-terrain[geo,places]"
 ```
 
 With uv:
 
 ```bash
-uv tool install git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.0 --with rasterio --with geopandas --with pyproj --with shapely --with geopy
+uv tool install git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.1 --with rasterio --with geopandas --with pyproj --with shapely --with geopy
 ```
 
 ## Render A Terrain

@@ -56,7 +56,7 @@ piece-of-cake render --dem dem.tif --out terrain.html
 Start from a place name:
 
 ```bash
-pip install "piece-of-cake[geo,places]"
+pip install "piece-of-cake-terrain[geo,places]"
 ```
 
 ```python

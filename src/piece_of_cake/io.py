@@ -22,7 +22,7 @@ def require_rasterio():
     except ImportError as exc:
         raise ImportError(
             "Raster operations need the 'geo' extra. Install with: "
-            "pip install 'piece-of-cake[geo]'"
+            "pip install 'piece-of-cake-terrain[geo]'"
         ) from exc
     return rasterio, from_bounds, reproject, transform_bounds, Resampling
 
@@ -33,7 +33,7 @@ def require_geopandas():
     except ImportError as exc:
         raise ImportError(
             "Vector operations need the 'geo' extra. Install with: "
-            "pip install 'piece-of-cake[geo]'"
+            "pip install 'piece-of-cake-terrain[geo]'"
         ) from exc
     return gpd
 
@@ -106,4 +106,3 @@ def read_vector(path: str | Path, *, bounds: Bounds | None = None, layer: str | 
         ).iloc[0]
         gdf = gdf[gdf.geometry.intersects(bbox)]
     return gdf
-

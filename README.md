@@ -19,43 +19,43 @@ It is deliberately focused on the 3D model. Give it a DEM and optional layers, t
 From GitHub:
 
 ```bash
-pip install "piece-of-cake[geo,places] @ git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.0"
+pip install "piece-of-cake-terrain[geo,places] @ git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.1"
 ```
 
 For the lightweight core:
 
 ```bash
-pip install piece-of-cake
+pip install piece-of-cake-terrain
 ```
 
 For geospatial raster/vector IO:
 
 ```bash
-pip install "piece-of-cake[geo]"
+pip install "piece-of-cake-terrain[geo]"
 ```
 
 For notebook display:
 
 ```bash
-pip install "piece-of-cake[geo,notebook]"
+pip install "piece-of-cake-terrain[geo,notebook]"
 ```
 
 For place-name lookup:
 
 ```bash
-pip install "piece-of-cake[geo,places]"
+pip install "piece-of-cake-terrain[geo,places]"
 ```
 
 For an isolated terminal command:
 
 ```bash
-pipx install "git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.0#egg=piece-of-cake[geo,places]"
+pipx install "git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.1#egg=piece-of-cake-terrain[geo,places]"
 ```
 
 With uv:
 
 ```bash
-uv tool install git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.0 --with rasterio --with geopandas --with pyproj --with shapely --with geopy
+uv tool install git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.1 --with rasterio --with geopandas --with pyproj --with shapely --with geopy
 ```
 
 ## Quick Start

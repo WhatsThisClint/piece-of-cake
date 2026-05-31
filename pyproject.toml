@@ -3,8 +3,8 @@ requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"
 
 [project]
-name = "piece-of-cake"
-version = "0.1.0"
+name = "piece-of-cake-terrain"
+version = "0.1.1"
 description = "Build interactive 3D terrain HTML scenes from DEMs, rasters, vectors, and configurable map styles."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -57,7 +57,7 @@ dev = [
   "ruff>=0.6",
 ]
 all = [
-  "piece-of-cake[geo,notebook,places]",
+  "piece-of-cake-terrain[geo,notebook,places]",
 ]
 
 [project.urls]

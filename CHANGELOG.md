@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1 - 2026-05-31
+
+- Renamed the PyPI distribution to `piece-of-cake-terrain`.
+- Kept the Python import package as `piece_of_cake`.
+- Kept the command-line executable as `piece-of-cake`.
+
 ## 0.1.0 - 2026-05-31
 
 - Initial package scaffold.

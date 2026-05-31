@@ -7,7 +7,7 @@ storing a PyPI password or long-lived API token in GitHub.
 
 On PyPI, add a pending publisher from the `PyPiClint` account:
 
-- PyPI project name: `piece-of-cake`
+- PyPI project name: `piece-of-cake-terrain`
 - Owner: `WhatsThisClint`
 - Repository name: `piece-of-cake`
 - Workflow name: `publish.yml`
@@ -22,14 +22,14 @@ reserve the package name.
 After the pending publisher exists, run the GitHub workflow:
 
 ```bash
-gh workflow run publish.yml --repo WhatsThisClint/piece-of-cake --ref main -f ref=v0.1.0
+gh workflow run publish.yml --repo WhatsThisClint/piece-of-cake --ref main -f ref=v0.1.1
 ```
 
 For future versions:
 
 1. Update the version in `pyproject.toml` and `src/piece_of_cake/__init__.py`.
 2. Add a changelog entry.
-3. Commit and tag the version, for example `v0.1.1`.
+3. Commit and tag the version, for example `v0.1.2`.
 4. Create a GitHub Release.
 5. Run the publish workflow, or let it run from the published release event.
 
