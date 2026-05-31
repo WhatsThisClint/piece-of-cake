@@ -47,6 +47,12 @@ Display in a notebook:
 scene.show()
 ```
 
+Use the terminal command:
+
+```bash
+piece-of-cake render --dem dem.tif --out terrain.html
+```
+
 Start from a place name:
 
 ```bash

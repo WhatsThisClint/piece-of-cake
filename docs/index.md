@@ -19,3 +19,10 @@ Use it when you want:
 
 The package intentionally separates the 3D scene engine from report generation.
 
+## Guides
+
+- [Quick start](quickstart.md)
+- [Command line](cli.md)
+- [Styling custom layers](styling.md)
+- [Custom layers](custom-layers.md)
+- [DEM providers](providers.md)

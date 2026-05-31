@@ -66,6 +66,9 @@ Documentation = "https://github.com/WhatsThisClint/piece-of-cake/tree/main/docs"
 Issues = "https://github.com/WhatsThisClint/piece-of-cake/issues"
 Source = "https://github.com/WhatsThisClint/piece-of-cake"
 
+[project.scripts]
+piece-of-cake = "piece_of_cake.cli:main"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/piece_of_cake"]
 

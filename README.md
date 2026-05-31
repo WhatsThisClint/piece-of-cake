@@ -16,6 +16,12 @@ It is deliberately focused on the 3D model, not full report generation. Give it 
 
 ## Install
 
+From GitHub:
+
+```bash
+pip install "piece-of-cake[geo,places] @ git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.0"
+```
+
 For the lightweight core:
 
 ```bash
@@ -38,6 +44,18 @@ For place-name lookup:
 
 ```bash
 pip install "piece-of-cake[geo,places]"
+```
+
+For an isolated terminal command:
+
+```bash
+pipx install "git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.0#egg=piece-of-cake[geo,places]"
+```
+
+With uv:
+
+```bash
+uv tool install git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.0 --with rasterio --with geopandas --with pyproj --with shapely --with geopy
 ```
 
 ## Quick Start
@@ -63,6 +81,12 @@ scene.add_raster(
 )
 
 scene.to_html("dharashiv_terrain.html")
+```
+
+From the terminal:
+
+```bash
+piece-of-cake render --dem data/dem.tif --out dharashiv_terrain.html --title "Dharashiv Terrain"
 ```
 
 You can also start from a place name when the optional `places` extra is installed:
@@ -117,6 +141,23 @@ scene.add_dem(provider=my_dem_provider)
 ```
 
 See [docs/providers.md](docs/providers.md).
+
+## Terminal Commands
+
+```bash
+piece-of-cake --help
+piece-of-cake render --dem data/dem.tif --out terrain.html
+piece-of-cake inspect-raster custom_tree_canopy.tif
+piece-of-cake inspect-vector villages.gpkg
+```
+
+If Windows cannot find `piece-of-cake` because Python's Scripts folder is not on PATH, use:
+
+```bash
+python -m piece_of_cake --help
+```
+
+See [docs/cli.md](docs/cli.md).
 
 ## Citation
 

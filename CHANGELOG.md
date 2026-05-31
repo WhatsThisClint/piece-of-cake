@@ -8,5 +8,5 @@
 - Added click-to-capture latitude, longitude, and elevation in exported HTML.
 - Added layer inspection helpers for unknown rasters and vectors.
 - Added built-in style profiles and custom style dictionaries.
+- Added command-line `render`, `inspect-raster`, and `inspect-vector` commands.
 - Added MIT license and citation metadata.
-
