@@ -2,7 +2,7 @@
 
 Piece of Cake builds interactive 3D terrain scenes from DEMs, rasters, vectors, and configurable geospatial styles.
 
-It is deliberately focused on the 3D model, not full report generation. Give it a DEM and optional layers, then export a clickable HTML file or display it in a Jupyter/Colab notebook.
+It is deliberately focused on the 3D model. Give it a DEM and optional layers, then export a clickable HTML file or display it in a Jupyter/Colab notebook.
 
 ## What It Does
 
