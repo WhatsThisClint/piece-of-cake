@@ -26,3 +26,4 @@ The package intentionally separates the 3D scene engine from report generation.
 - [Styling custom layers](styling.md)
 - [Custom layers](custom-layers.md)
 - [DEM providers](providers.md)
+- [Publishing to PyPI](publishing.md)

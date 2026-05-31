@@ -159,6 +159,12 @@ python -m piece_of_cake --help
 
 See [docs/cli.md](docs/cli.md).
 
+## PyPI Publishing
+
+Publishing is set up through GitHub Actions and PyPI Trusted Publishing. See
+[docs/publishing.md](docs/publishing.md) for the one-time PyPI publisher fields
+and release workflow.
+
 ## Citation
 
 If you use Piece of Cake in research, reports, or public-facing tools, please cite it using the metadata in [CITATION.cff](CITATION.cff).
