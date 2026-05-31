@@ -1,0 +1,78 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "piece-of-cake"
+version = "0.1.0"
+description = "Build interactive 3D terrain HTML scenes from DEMs, rasters, vectors, and configurable map styles."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+  { name = "Clinton Fernandes" }
+]
+keywords = [
+  "terrain",
+  "3d",
+  "gis",
+  "geospatial",
+  "plotly",
+  "dem",
+  "raster",
+  "vector",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: GIS",
+  "Topic :: Scientific/Engineering :: Visualization",
+]
+dependencies = [
+  "numpy>=1.24",
+  "plotly>=5.18",
+]
+
+[project.optional-dependencies]
+geo = [
+  "geopandas>=0.14",
+  "pyproj>=3.5",
+  "rasterio>=1.3",
+  "shapely>=2.0",
+]
+notebook = [
+  "ipython>=8.0",
+]
+places = [
+  "geopy>=2.4",
+]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.6",
+]
+all = [
+  "piece-of-cake[geo,notebook,places]",
+]
+
+[project.urls]
+Homepage = "https://github.com/WhatsThisClint/piece-of-cake"
+Documentation = "https://github.com/WhatsThisClint/piece-of-cake/tree/main/docs"
+Issues = "https://github.com/WhatsThisClint/piece-of-cake/issues"
+Source = "https://github.com/WhatsThisClint/piece-of-cake"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/piece_of_cake"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

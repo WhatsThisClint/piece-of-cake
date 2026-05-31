@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use Piece of Cake in research, reports, or public tools, please cite it."
+title: "Piece of Cake"
+version: 0.1.0
+date-released: 2026-05-31
+authors:
+  - family-names: Fernandes
+    given-names: Clinton
+license: MIT
+repository-code: "https://github.com/WhatsThisClint/piece-of-cake"
+abstract: "Piece of Cake builds interactive 3D terrain HTML scenes from DEMs, rasters, vectors, and configurable geospatial styles."
+keywords:
+  - GIS
+  - terrain
+  - DEM
+  - Plotly
+  - geospatial visualization
+
