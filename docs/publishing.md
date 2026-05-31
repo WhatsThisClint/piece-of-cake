@@ -3,23 +3,24 @@
 Piece of Cake uses PyPI Trusted Publishing through GitHub Actions. This avoids
 storing a PyPI password or long-lived API token in GitHub.
 
-## One-Time PyPI Setup
+Current package:
 
-On PyPI, add a pending publisher from the `PyPiClint` account:
+- PyPI: https://pypi.org/project/piece-of-cake-terrain/
+- GitHub release: https://github.com/WhatsThisClint/piece-of-cake/releases/tag/v0.1.1
 
-- PyPI project name: `piece-of-cake-terrain`
+## Trusted Publisher
+
+The PyPI trusted publisher is configured with:
+
+- Project name: `piece-of-cake-terrain`
 - Owner: `WhatsThisClint`
 - Repository name: `piece-of-cake`
 - Workflow name: `publish.yml`
 - Environment name: `pypi`
 
-PyPI will create the project the first time this publisher successfully uploads
-a release. Until that first upload happens, the pending publisher does not
-reserve the package name.
-
 ## Publish
 
-After the pending publisher exists, run the GitHub workflow:
+Run the GitHub workflow for the version tag:
 
 ```bash
 gh workflow run publish.yml --repo WhatsThisClint/piece-of-cake --ref main -f ref=v0.1.1

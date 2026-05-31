@@ -64,6 +64,7 @@ all = [
 Homepage = "https://github.com/WhatsThisClint/piece-of-cake"
 Documentation = "https://github.com/WhatsThisClint/piece-of-cake/tree/main/docs"
 Issues = "https://github.com/WhatsThisClint/piece-of-cake/issues"
+Package = "https://pypi.org/project/piece-of-cake-terrain/"
 Source = "https://github.com/WhatsThisClint/piece-of-cake"
 
 [project.scripts]

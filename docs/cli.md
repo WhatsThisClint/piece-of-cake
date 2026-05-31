@@ -5,7 +5,13 @@ Piece of Cake installs a `piece-of-cake` command.
 On Windows, if Python's Scripts folder is not on PATH, use `python -m piece_of_cake`
 with the same arguments.
 
-## Install From GitHub
+## Install From PyPI
+
+```bash
+pip install "piece-of-cake-terrain[geo,places]"
+```
+
+## Install From GitHub Source
 
 ```bash
 pip install "piece-of-cake-terrain[geo,places] @ git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.1"
@@ -14,13 +20,13 @@ pip install "piece-of-cake-terrain[geo,places] @ git+https://github.com/WhatsThi
 For an isolated command-line install:
 
 ```bash
-pipx install "git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.1#egg=piece-of-cake-terrain[geo,places]"
+pipx install "piece-of-cake-terrain[geo,places]"
 ```
 
 With uv:
 
 ```bash
-uv tool install git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.1 --with rasterio --with geopandas --with pyproj --with shapely --with geopy
+uv tool install piece-of-cake-terrain --with rasterio --with geopandas --with pyproj --with shapely --with geopy
 ```
 
 ## Render A Terrain
