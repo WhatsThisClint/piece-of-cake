@@ -22,6 +22,16 @@ pip install -e ".[geo,notebook]"
 Then open the notebooks in `course/notebooks/`. Exported HTML, GeoTIFF, and
 GeoPackage files are written to `course_outputs/`, which is ignored by Git.
 
+## Colab Note
+
+If you open an individual notebook in Google Colab, `course_helpers.py` may not
+be present beside it. Each notebook now checks for that file and downloads it
+from this GitHub repository when needed. You only need to install the package:
+
+```bash
+pip install "piece-of-cake-terrain[geo,notebook]"
+```
+
 ## Learning Path
 
 1. [First 3D Terrain](notebooks/01_first_3d_terrain.ipynb)
@@ -55,4 +65,3 @@ GeoPackage files are written to `course_outputs/`, which is ignored by Git.
 - The data helpers live in `course/notebooks/course_helpers.py`.
 - The course test executes notebook code cells headlessly and checks that the
   generated HTML contains the Plotly terrain div and click handler.
-

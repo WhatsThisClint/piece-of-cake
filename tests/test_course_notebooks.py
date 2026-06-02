@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import urllib.request
 from pathlib import Path
 
 import pytest
@@ -45,6 +46,7 @@ def test_course_notebook_structure(notebook_path: Path):
     assert markdown.lstrip().startswith("# ")
     assert "Learning objective:" in markdown
     assert "piece_of_cake" in code
+    assert "COURSE_HELPERS_URL" in code
     assert "course_outputs" in code or "export_scene" in code
 
 
@@ -52,7 +54,14 @@ def test_course_notebook_structure(notebook_path: Path):
 def test_course_notebook_executes(notebook_path: Path, tmp_path: Path, monkeypatch):
     notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
     helper_path = NOTEBOOK_DIR / "course_helpers.py"
-    shutil.copy2(helper_path, tmp_path / "course_helpers.py")
+
+    def fake_urlretrieve(url: str, filename: str):
+        assert url.endswith("/course/notebooks/course_helpers.py")
+        destination = tmp_path / filename
+        shutil.copy2(helper_path, destination)
+        return str(destination), None
+
+    monkeypatch.setattr(urllib.request, "urlretrieve", fake_urlretrieve)
     monkeypatch.chdir(tmp_path)
     monkeypatch.syspath_prepend(str(tmp_path))
     namespace = {"__name__": "__main__"}
