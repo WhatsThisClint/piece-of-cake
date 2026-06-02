@@ -7,9 +7,9 @@ __pycache__/
 venv/
 dist/
 build/
+course_outputs/
 *.html
 *.tif
 *.tiff
 *.gpkg
 *.zip
-

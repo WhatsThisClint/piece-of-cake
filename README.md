@@ -145,6 +145,14 @@ scene.add_dem(provider=my_dem_provider)
 
 See [docs/providers.md](docs/providers.md).
 
+## Beginner Course
+
+A self-contained Jupyter course is available in [course/](course/). It includes
+15 beginner-friendly notebooks covering DEM terrain, HTML export, bounding
+boxes, DEM providers, raster drapes, custom styling, vector overlays, and a mini
+diagnosis dashboard. The notebooks use synthetic local data and do not require
+Drive files or public data downloads.
+
 ## Terminal Commands
 
 ```bash
