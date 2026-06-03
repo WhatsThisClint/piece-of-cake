@@ -11,6 +11,32 @@ def test_cli_parser_supports_render_command():
     assert args.out == "terrain.html"
 
 
+def test_cli_parser_supports_provider_dem_download():
+    parser = build_parser()
+
+    args = parser.parse_args(
+        [
+            "render",
+            "--bounds",
+            "76",
+            "18",
+            "76.1",
+            "18.1",
+            "--dem-source",
+            "opentopography",
+            "--sources-config",
+            "sources.yml",
+            "--out",
+            "terrain.html",
+        ]
+    )
+
+    assert args.command == "render"
+    assert args.dem is None
+    assert args.dem_source == "opentopography"
+    assert args.sources_config == "sources.yml"
+
+
 def test_parse_named_layer_spec():
     assert _parse_layer_spec("Tree canopy=data/tree.tif") == ("Tree canopy", "data/tree.tif")
 

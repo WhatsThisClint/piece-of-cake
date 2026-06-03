@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "piece-of-cake-terrain"
-version = "0.1.1"
+version = "0.1.2"
 description = "Build interactive 3D terrain HTML scenes from DEMs, rasters, vectors, and configurable map styles."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -52,12 +52,15 @@ notebook = [
 places = [
   "geopy>=2.4",
 ]
+providers = [
+  "PyYAML>=6.0",
+]
 dev = [
   "pytest>=8.0",
   "ruff>=0.6",
 ]
 all = [
-  "piece-of-cake-terrain[geo,notebook,places]",
+  "piece-of-cake-terrain[geo,notebook,places,providers]",
 ]
 
 [project.urls]

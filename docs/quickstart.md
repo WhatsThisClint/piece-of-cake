@@ -53,14 +53,28 @@ Use the terminal command:
 piece-of-cake render --dem dem.tif --out terrain.html
 ```
 
+Fetch a DEM from a configured provider instead of passing a DEM file:
+
+```python
+scene = TerrainScene.from_bbox(76.1, 18.0, 76.4, 18.3)
+scene.add_dem(source="opentopography", width=500)
+scene.to_html("terrain.html")
+```
+
+With a YAML source config:
+
+```python
+scene.add_dem(source="auto", config="sources.yml")
+```
+
 Start from a place name:
 
 ```bash
-pip install "piece-of-cake-terrain[geo,places]"
+pip install "piece-of-cake-terrain[geo,places,providers]"
 ```
 
 ```python
 scene = TerrainScene.from_place("Dharashiv, Maharashtra, India")
-scene.add_dem(path="dem.tif")
+scene.add_dem(source="opentopography")
 scene.to_html("terrain.html")
 ```

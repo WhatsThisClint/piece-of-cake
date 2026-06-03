@@ -8,25 +8,25 @@ with the same arguments.
 ## Install From PyPI
 
 ```bash
-pip install "piece-of-cake-terrain[geo,places]"
+pip install "piece-of-cake-terrain[geo,places,providers]"
 ```
 
 ## Install From GitHub Source
 
 ```bash
-pip install "piece-of-cake-terrain[geo,places] @ git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.1"
+pip install "piece-of-cake-terrain[geo,places,providers] @ git+https://github.com/WhatsThisClint/piece-of-cake.git@main"
 ```
 
 For an isolated command-line install:
 
 ```bash
-pipx install "piece-of-cake-terrain[geo,places]"
+pipx install "piece-of-cake-terrain[geo,places,providers]"
 ```
 
 With uv:
 
 ```bash
-uv tool install piece-of-cake-terrain --with rasterio --with geopandas --with pyproj --with shapely --with geopy
+uv tool install piece-of-cake-terrain --with rasterio --with geopandas --with pyproj --with shapely --with geopy --with PyYAML
 ```
 
 ## Render A Terrain
@@ -58,6 +58,41 @@ Use explicit WGS84 bounds when the DEM bounds should be clipped or overridden:
 piece-of-cake render ^
   --dem data/dem.tif ^
   --bounds 76.1 18.0 76.4 18.3 ^
+  --out terrain.html
+```
+
+## Render From OpenTopography
+
+Set an API key when using OpenTopography datasets that require one:
+
+```bash
+set OPENTOPOGRAPHY_API_KEY=your-key-here
+```
+
+Fetch a DEM from a bounding box:
+
+```bash
+piece-of-cake render ^
+  --bounds 76.1 18.0 76.4 18.3 ^
+  --dem-source opentopography ^
+  --out terrain.html
+```
+
+Fetch from a place name:
+
+```bash
+piece-of-cake render ^
+  --place "Dharashiv, Maharashtra, India" ^
+  --dem-source opentopography ^
+  --out terrain.html
+```
+
+Use a YAML source config:
+
+```bash
+piece-of-cake render ^
+  --bounds 76.1 18.0 76.4 18.3 ^
+  --sources-config sources.yml ^
   --out terrain.html
 ```
 

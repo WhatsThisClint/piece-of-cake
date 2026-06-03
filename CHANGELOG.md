@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.2 - 2026-06-03
+
+- Added DEM source configs inspired by account/source registry workflows.
+- Added built-in OpenTopography DEM download support.
+- Added local and URL raster DEM providers.
+- Added `source=` and `config=` support to `TerrainScene.add_dem()`.
+- Added CLI provider-backed DEM rendering from bounds or place names.
+- Added provider documentation, example source config, and tests.
+
 ## 0.1.1 - 2026-05-31
 
 - Renamed the PyPI distribution to `piece-of-cake-terrain`.

@@ -1,0 +1,110 @@
+from pathlib import Path
+
+import numpy as np
+
+from piece_of_cake import OpenTopographyProvider, TerrainScene, build_dem_provider, load_sources_config
+from piece_of_cake.bounds import Bounds
+from piece_of_cake.io import require_rasterio
+
+
+def test_local_dem_source_from_yaml_config(tmp_path):
+    dem_path = tmp_path / "dem.tif"
+    _write_test_dem(dem_path)
+    config_path = tmp_path / "sources.yml"
+    config_path.write_text(
+        """
+default_dem: local_dem
+sources:
+  local_dem:
+    provider: local
+    path: dem.tif
+""".strip(),
+        encoding="utf-8",
+    )
+
+    scene = TerrainScene.from_bbox(76.0, 18.0, 76.1, 18.1)
+    scene.add_dem(source="auto", config=config_path, width=4, height=2)
+
+    assert scene.dem.shape == (2, 4)
+    assert scene.bounds == Bounds(76.0, 18.0, 76.1, 18.1)
+    assert np.isfinite(scene.dem).all()
+
+
+def test_build_dem_provider_uses_account_env(tmp_path, monkeypatch):
+    monkeypatch.setenv("OPENTOPOGRAPHY_API_KEY", "from-env")
+    config = load_sources_config(
+        {
+            "accounts": {"opentopography": {"api_key_env": "OPENTOPOGRAPHY_API_KEY"}},
+            "sources": {
+                "cop30": {
+                    "provider": "opentopography",
+                    "dem_type": "COP30",
+                    "cache_dir": str(tmp_path / "cache"),
+                }
+            },
+        }
+    )
+
+    provider = build_dem_provider("cop30", config=config)
+
+    assert isinstance(provider, OpenTopographyProvider)
+    assert provider.dem_type == "COP30"
+    assert provider.api_key == "from-env"
+
+
+def test_opentopography_provider_downloads_and_caches(tmp_path):
+    dem_path = tmp_path / "served.tif"
+    _write_test_dem(dem_path)
+    requested_urls = []
+
+    def fake_download(url: str, path: Path, headers, timeout: float) -> None:
+        requested_urls.append(url)
+        path.write_bytes(dem_path.read_bytes())
+
+    provider = OpenTopographyProvider(
+        dem_type="COP30",
+        api_key="secret",
+        cache_dir=tmp_path / "cache",
+        downloader=fake_download,
+        timeout=5,
+    )
+
+    bounds = Bounds(76.0, 18.0, 76.1, 18.1)
+    dem, fetched_bounds = provider.fetch_dem(bounds, width=3, height=3)
+    dem_again, _ = provider.fetch_dem(bounds, width=3, height=3)
+
+    assert dem.shape == (3, 3)
+    assert np.array_equal(dem, dem_again)
+    assert fetched_bounds == bounds
+    assert len(requested_urls) == 1
+    assert "demtype=COP30" in requested_urls[0]
+    assert "south=18.0" in requested_urls[0]
+    assert "north=18.1" in requested_urls[0]
+    assert "west=76.0" in requested_urls[0]
+    assert "east=76.1" in requested_urls[0]
+    assert "API_Key=secret" in requested_urls[0]
+
+
+def _write_test_dem(path: Path) -> None:
+    rasterio, from_bounds, *_ = require_rasterio()
+    values = np.array(
+        [
+            [10, 20, 30],
+            [15, 25, 35],
+            [20, 30, 40],
+        ],
+        dtype="float32",
+    )
+    transform = from_bounds(76.0, 18.0, 76.1, 18.1, values.shape[1], values.shape[0])
+    with rasterio.open(
+        path,
+        "w",
+        driver="GTiff",
+        height=values.shape[0],
+        width=values.shape[1],
+        count=1,
+        dtype="float32",
+        crs="EPSG:4326",
+        transform=transform,
+    ) as dst:
+        dst.write(values, 1)

@@ -1,7 +1,7 @@
 # Piece of Cake
 
 [PyPI package](https://pypi.org/project/piece-of-cake-terrain/) |
-[GitHub release](https://github.com/WhatsThisClint/piece-of-cake/releases/tag/v0.1.1)
+[GitHub release](https://github.com/WhatsThisClint/piece-of-cake/releases/tag/v0.1.2)
 
 Piece of Cake builds interactive 3D terrain scenes from DEMs, rasters, vectors, and configurable geospatial styles.
 
@@ -16,6 +16,7 @@ It is deliberately focused on the 3D model. Give it a DEM and optional layers, t
 - Exports standalone HTML.
 - Supports custom style profiles for unknown layers.
 - Helps inspect unknown raster/vector layers before styling them.
+- Can fetch DEMs from configured provider sources such as OpenTopography.
 
 ## Install
 
@@ -29,6 +30,12 @@ For geospatial raster/vector IO:
 
 ```bash
 pip install "piece-of-cake-terrain[geo]"
+```
+
+For YAML source configs and provider-backed DEM download:
+
+```bash
+pip install "piece-of-cake-terrain[geo,providers]"
 ```
 
 For notebook display:
@@ -46,7 +53,7 @@ pip install "piece-of-cake-terrain[geo,places]"
 From GitHub source:
 
 ```bash
-pip install "piece-of-cake-terrain[geo,places] @ git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.1"
+pip install "piece-of-cake-terrain[geo,places,providers] @ git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.2"
 ```
 
 For an isolated terminal command:
@@ -58,7 +65,7 @@ pipx install "piece-of-cake-terrain[geo,places]"
 With uv:
 
 ```bash
-uv tool install piece-of-cake-terrain --with rasterio --with geopandas --with pyproj --with shapely --with geopy
+uv tool install piece-of-cake-terrain --with rasterio --with geopandas --with pyproj --with shapely --with geopy --with PyYAML
 ```
 
 ## Quick Start
@@ -130,11 +137,40 @@ scene.add_vector(
 
 ## DEM Sources
 
-Version `0.1.1` supports local DEM files and custom provider hooks. Automatic DEM download is intentionally provider-based because DEM licensing, resolution, and reliability vary by country and source.
+Piece of Cake supports local DEM files, custom provider hooks, and configured
+provider sources such as OpenTopography.
 
 ```python
 scene = TerrainScene.from_bbox(76.1, 18.0, 76.4, 18.3)
 scene.add_dem(path="/content/drive/MyDrive/DEM/India.tif")
+```
+
+Fetch a DEM automatically from OpenTopography:
+
+```python
+scene = TerrainScene.from_bbox(76.1, 18.0, 76.4, 18.3)
+scene.add_dem(source="opentopography", width=500)
+scene.to_html("terrain.html")
+```
+
+Use an IHEWAcollect-style YAML config for accounts and named sources:
+
+```yaml
+accounts:
+  opentopography:
+    api_key_env: OPENTOPOGRAPHY_API_KEY
+
+default_dem: opentopography_cop30
+
+sources:
+  opentopography_cop30:
+    provider: opentopography
+    dem_type: COP30
+    cache_dir: .piece-of-cake/cache
+```
+
+```python
+scene.add_dem(source="auto", config="sources.yml")
 ```
 
 Or plug in your own provider:

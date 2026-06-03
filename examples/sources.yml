@@ -1,0 +1,20 @@
+accounts:
+  opentopography:
+    api_key_env: OPENTOPOGRAPHY_API_KEY
+
+default_dem: opentopography_cop30
+
+sources:
+  opentopography_cop30:
+    provider: opentopography
+    dem_type: COP30
+    cache_dir: .piece-of-cake/cache
+
+  local_office_dem:
+    provider: local
+    path: D:/gis/dem/office_dem.tif
+
+  server_dem:
+    provider: url
+    url: https://example.org/dem.tif
+    cache_dir: .piece-of-cake/cache

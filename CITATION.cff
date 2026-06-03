@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use Piece of Cake in research, reports, or public tools, please cite it."
 title: "Piece of Cake"
-version: 0.1.0
-date-released: 2026-05-31
+version: 0.1.2
+date-released: 2026-06-03
 authors:
   - family-names: Fernandes
     given-names: Clinton
@@ -15,4 +15,3 @@ keywords:
   - DEM
   - Plotly
   - geospatial visualization
-

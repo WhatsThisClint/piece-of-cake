@@ -6,7 +6,7 @@ storing a PyPI password or long-lived API token in GitHub.
 Current package:
 
 - PyPI: https://pypi.org/project/piece-of-cake-terrain/
-- GitHub release: https://github.com/WhatsThisClint/piece-of-cake/releases/tag/v0.1.1
+- GitHub release: https://github.com/WhatsThisClint/piece-of-cake/releases/tag/v0.1.2
 
 ## Trusted Publisher
 
@@ -23,7 +23,7 @@ The PyPI trusted publisher is configured with:
 Run the GitHub workflow for the version tag:
 
 ```bash
-gh workflow run publish.yml --repo WhatsThisClint/piece-of-cake --ref main -f ref=v0.1.1
+gh workflow run publish.yml --repo WhatsThisClint/piece-of-cake --ref main -f ref=v0.1.2
 ```
 
 For future versions:

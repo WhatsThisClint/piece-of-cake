@@ -4,21 +4,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any
 
 import numpy as np
 import plotly.graph_objects as go
 
 from .bounds import Bounds
 from .io import read_raster_grid, read_vector
+from .providers import ConfigInput, DemProvider, build_dem_provider
 from .styles import StyleProfile, auto_style, categorical_colorscale
-
-
-class DemProvider(Protocol):
-    """Protocol for custom DEM download/provider integrations."""
-
-    def fetch_dem(self, bounds: Bounds, *, width: int, height: int) -> tuple[np.ndarray, Bounds]:
-        """Return ``(dem_array, bounds)`` for the requested WGS84 bounds."""
 
 
 @dataclass
@@ -114,14 +108,15 @@ class TerrainScene:
         *,
         source: str | None = None,
         provider: DemProvider | None = None,
+        config: ConfigInput = None,
         width: int = 350,
         height: int | None = None,
     ) -> "TerrainScene":
         """Load or fetch a DEM for the scene.
 
-        ``source=\"auto\"`` is intentionally reserved for user-provided provider
-        integrations. Public DEM licensing, resolution, and availability vary by
-        region, so automatic download should be explicit.
+        Use ``path=`` for a local raster, ``provider=`` for a custom provider
+        object, or ``source=`` plus optional YAML/JSON ``config=`` for a named
+        provider source such as ``opentopography``.
         """
 
         height = height or width
@@ -131,13 +126,13 @@ class TerrainScene:
             if self.bounds is None:
                 raise ValueError("bounds are required when fetching a DEM from a provider")
             dem, bounds = provider.fetch_dem(self.bounds, width=width, height=height)
-        elif source == "auto":
-            raise NotImplementedError(
-                "Automatic DEM download is provider-based. Pass provider=YourDemProvider() "
-                "or use add_dem(path='local_dem.tif')."
-            )
+        elif source:
+            if self.bounds is None:
+                raise ValueError("bounds are required when fetching a DEM from a source")
+            dem_provider = build_dem_provider(source, config=config)
+            dem, bounds = dem_provider.fetch_dem(self.bounds, width=width, height=height)
         else:
-            raise ValueError("Provide path=..., provider=..., or source='auto'")
+            raise ValueError("Provide path=..., provider=..., or source=...")
 
         self.dem = np.asarray(dem, dtype="float32")
         self.bounds = bounds

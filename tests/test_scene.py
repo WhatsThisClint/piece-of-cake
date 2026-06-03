@@ -22,3 +22,12 @@ def test_add_dem_requires_input():
     else:
         raise AssertionError("add_dem should require an input source")
 
+
+def test_add_dem_source_requires_bounds():
+    scene = TerrainScene()
+    try:
+        scene.add_dem(source="auto")
+    except ValueError as exc:
+        assert "bounds are required" in str(exc)
+    else:
+        raise AssertionError("provider DEM download should require bounds")
