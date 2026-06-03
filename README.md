@@ -1,7 +1,7 @@
 # Piece of Cake
 
 [PyPI package](https://pypi.org/project/piece-of-cake-terrain/) |
-[GitHub release](https://github.com/WhatsThisClint/piece-of-cake/releases/tag/v0.1.5)
+[GitHub release](https://github.com/WhatsThisClint/piece-of-cake/releases/tag/v0.1.6)
 
 Piece of Cake builds interactive 3D terrain scenes from DEMs, rasters, vectors, and configurable geospatial styles.
 
@@ -55,7 +55,7 @@ pip install "piece-of-cake-terrain[geo,places]"
 From GitHub source:
 
 ```bash
-pip install "piece-of-cake-terrain[geo,places,providers] @ git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.5"
+pip install "piece-of-cake-terrain[geo,places,providers] @ git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.6"
 ```
 
 For an isolated terminal command:

@@ -63,3 +63,20 @@ def test_add_worldcover_uses_provider_and_style():
 
     assert "ESA WorldCover" in html
     assert "Layer Opacity" in html
+
+
+def test_colorbars_do_not_overlap_for_dem_and_worldcover():
+    class FakeWorldCoverProvider:
+        def fetch_raster(self, bounds: Bounds, *, width: int, height: int):
+            return [[10, 50], [80, 40]], bounds
+
+    scene = TerrainScene.from_bbox(76.0, 18.0, 76.1, 18.1)
+    scene.add_dem_array([[10, 20], [15, 30]], bounds=(76.0, 18.0, 76.1, 18.1))
+    scene.add_worldcover(provider=FakeWorldCoverProvider(), opacity=0.55)
+
+    fig = scene.to_figure()
+    colorbars = [trace.colorbar for trace in fig.data if getattr(trace, "showscale", False)]
+
+    assert len(colorbars) == 2
+    assert colorbars[0].y != colorbars[1].y
+    assert fig.layout.margin.r >= 100

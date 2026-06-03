@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.6 - 2026-06-03
+
+- Fixed overlapping colorbars when a DEM and WorldCover/raster drapes both show scales.
+- Added right-side figure margin for stacked surface colorbars.
+- Added a regression test for DEM plus WorldCover colorbar placement.
+
 ## 0.1.5 - 2026-06-03
 
 - Added `TerrainScene.add_worldcover()` to fetch and drape ESA WorldCover land cover.

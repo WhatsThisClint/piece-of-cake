@@ -232,6 +232,8 @@ class TerrainScene:
         height, width = z.shape
         customdata = _customdata_grid(self.dem, self.bounds)
 
+        colorbar_total = 1 + sum(1 for overlay in self.raster_overlays if overlay.style.legend)
+        colorbar_index = 0
         traces: list[go.BaseTraceType] = [
             go.Surface(
                 z=z,
@@ -240,7 +242,7 @@ class TerrainScene:
                 customdata=customdata,
                 name="DEM",
                 showscale=True,
-                colorbar={"title": "Elevation"},
+                colorbar=_surface_colorbar("Elevation", colorbar_index, colorbar_total),
                 hovertemplate=(
                     "Lat %{customdata[0]:.5f}<br>"
                     "Lon %{customdata[1]:.5f}<br>"
@@ -248,10 +250,19 @@ class TerrainScene:
                 ),
             )
         ]
+        colorbar_index += 1
         relief = _safe_relief(z)
 
         for overlay in self.raster_overlays:
-            traces.append(_raster_surface_trace(overlay, z, relief, customdata))
+            colorbar = None
+            if overlay.style.legend:
+                colorbar = _surface_colorbar(
+                    overlay.style.label or overlay.name,
+                    colorbar_index,
+                    colorbar_total,
+                )
+                colorbar_index += 1
+            traces.append(_raster_surface_trace(overlay, z, relief, customdata, colorbar))
 
         for overlay in self.vector_overlays:
             traces.extend(_vector_traces(overlay, z, self.bounds))
@@ -259,7 +270,7 @@ class TerrainScene:
         fig = go.Figure(data=traces)
         fig.update_layout(
             title=self.title,
-            margin={"l": 0, "r": 0, "t": 45, "b": 0},
+            margin={"l": 0, "r": 128, "t": 45, "b": 0},
             scene={
                 "xaxis": {"visible": False},
                 "yaxis": {"visible": False},
@@ -838,6 +849,7 @@ def _raster_surface_trace(
     base_z: np.ndarray,
     relief: float,
     customdata: np.ndarray,
+    colorbar: dict[str, Any] | None,
 ) -> go.Surface:
     style = overlay.style
     z = base_z + relief * 0.006
@@ -865,7 +877,7 @@ def _raster_surface_trace(
         customdata=customdata,
         name=overlay.name,
         showscale=style.legend,
-        colorbar={"title": style.label or overlay.name},
+        colorbar=colorbar or {"title": style.label or overlay.name},
         hovertemplate=(
             f"{overlay.name}<br>"
             "Lat %{customdata[0]:.5f}<br>"
@@ -873,6 +885,27 @@ def _raster_surface_trace(
             "Elev %{customdata[2]:.1f}<extra></extra>"
         ),
     )
+
+
+def _surface_colorbar(title: str, index: int, total: int) -> dict[str, Any]:
+    if total <= 1:
+        return {
+            "title": {"text": title},
+            "thickness": 16,
+            "len": 0.72,
+            "x": 1.02,
+        }
+
+    length = min(0.36, 0.84 / total)
+    gap = min(0.06, 0.18 / max(total - 1, 1))
+    y = 0.94 - (index * (length + gap)) - (length / 2)
+    return {
+        "title": {"text": title},
+        "thickness": 14,
+        "len": length,
+        "x": 1.02,
+        "y": float(np.clip(y, 0.14, 0.82)),
+    }
 
 
 def _vector_traces(overlay: VectorOverlay, z: np.ndarray, bounds: Bounds) -> list[go.Scatter3d]:
