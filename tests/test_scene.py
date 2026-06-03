@@ -15,7 +15,12 @@ def test_scene_exports_clickable_html():
     assert "Vertical Exaggeration" in html
     assert "Center Lock Off" in html
     assert "piece-of-cake-exaggeration" in html
+    assert "piece-of-cake-exaggeration-increase" in html
+    assert 'id="piece-of-cake-exaggeration" type="number"' in html
+    assert 'id="piece-of-cake-exaggeration" type="range"' not in html
     assert "Layer Opacity" in html
+    assert "Layer Legend" in html
+    assert "contextmenu" in html
     assert "plotly_relayout" in html
     assert "Number.isFinite" in html
 
@@ -62,10 +67,12 @@ def test_add_worldcover_uses_provider_and_style():
     html = scene.to_html()
 
     assert "ESA WorldCover" in html
+    assert "Built-up" in html
     assert "Layer Opacity" in html
+    assert "Layer Legend" in html
 
 
-def test_colorbars_do_not_overlap_for_dem_and_worldcover():
+def test_categorical_worldcover_uses_class_legend_not_numeric_colorbar():
     class FakeWorldCoverProvider:
         def fetch_raster(self, bounds: Bounds, *, width: int, height: int):
             return [[10, 50], [80, 40]], bounds
@@ -76,7 +83,16 @@ def test_colorbars_do_not_overlap_for_dem_and_worldcover():
 
     fig = scene.to_figure()
     colorbars = [trace.colorbar for trace in fig.data if getattr(trace, "showscale", False)]
+    worldcover_trace = fig.data[1]
 
-    assert len(colorbars) == 2
-    assert colorbars[0].y != colorbars[1].y
+    assert len(colorbars) == 1
     assert fig.layout.margin.r >= 100
+    assert worldcover_trace.showscale is False
+    assert worldcover_trace.cmin == -0.5
+    assert worldcover_trace.cmax == 10.5
+    assert worldcover_trace.meta["pieceOfCakeClasses"] == [
+        {"value": 10, "index": 0, "label": "Tree cover", "color": "#006400"},
+        {"value": 40, "index": 3, "label": "Cropland", "color": "#f096ff"},
+        {"value": 50, "index": 4, "label": "Built-up", "color": "#fa0000"},
+        {"value": 80, "index": 7, "label": "Permanent water bodies", "color": "#0064c8"},
+    ]

@@ -151,18 +151,19 @@ def auto_style(values: np.ndarray | list[Any], *, max_categories: int = 16) -> S
 
 
 def categorical_colorscale(profile: StyleProfile) -> tuple[list[list[Any]], dict[Any, int]]:
-    """Convert class colors into a Plotly colorscale and value index map."""
+    """Convert class colors into a stepped Plotly colorscale and value index map."""
 
     classes = profile.classes or {}
     if not classes:
         return [[0.0, "#cccccc"], [1.0, "#cccccc"]], {}
 
     value_map = {value: idx for idx, value in enumerate(classes)}
-    max_idx = max(len(value_map) - 1, 1)
+    total = len(value_map)
     colorscale = []
     for value, idx in value_map.items():
         color = classes[value].get("color", DEFAULT_CATEGORICAL_COLORS[idx % len(DEFAULT_CATEGORICAL_COLORS)])
-        position = idx / max_idx
-        colorscale.append([position, color])
+        start = idx / total
+        end = (idx + 1) / total
+        colorscale.append([start, color])
+        colorscale.append([end, color])
     return colorscale, value_map
-

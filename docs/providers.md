@@ -158,5 +158,5 @@ clips/resamples them to the terrain grid. It uses the built-in
 scene.add_worldcover(year="2021", opacity=0.45)
 ```
 
-The HTML viewer includes layer opacity sliders, so users can adjust the
-WorldCover drape interactively without rerunning Python.
+The HTML viewer includes layer opacity controls and a class-name legend, so
+users can adjust and interpret the WorldCover drape without rerunning Python.

@@ -48,8 +48,8 @@ scene.show()
 ```
 
 The HTML viewer includes a controls panel for vertical exaggeration, reset/top
-view, center lock, and click-capture. Capture is off by default so dragging the
-terrain does not keep saving points.
+view, center lock, layer opacity, categorical legends, and click-capture.
+Capture is off by default so dragging the terrain does not keep saving points.
 
 Use the terminal command:
 
@@ -80,7 +80,8 @@ scene.add_worldcover(opacity=0.55)
 scene.show()
 ```
 
-The viewer includes opacity sliders for draped layers.
+The viewer includes opacity controls for draped layers and class-name legends
+for categorical drapes such as ESA WorldCover.
 
 With a YAML source config:
 

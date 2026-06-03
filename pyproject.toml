@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "piece-of-cake-terrain"
-version = "0.1.6"
+version = "0.1.7"
 description = "Build interactive 3D terrain HTML scenes from DEMs, rasters, vectors, and configurable map styles."
 readme = "README.md"
 requires-python = ">=3.10"

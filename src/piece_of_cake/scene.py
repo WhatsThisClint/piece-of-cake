@@ -232,7 +232,11 @@ class TerrainScene:
         height, width = z.shape
         customdata = _customdata_grid(self.dem, self.bounds)
 
-        colorbar_total = 1 + sum(1 for overlay in self.raster_overlays if overlay.style.legend)
+        colorbar_total = 1 + sum(
+            1
+            for overlay in self.raster_overlays
+            if overlay.style.legend and overlay.style.kind != "categorical"
+        )
         colorbar_index = 0
         traces: list[go.BaseTraceType] = [
             go.Surface(
@@ -255,7 +259,7 @@ class TerrainScene:
 
         for overlay in self.raster_overlays:
             colorbar = None
-            if overlay.style.legend:
+            if overlay.style.legend and overlay.style.kind != "categorical":
                 colorbar = _surface_colorbar(
                     overlay.style.label or overlay.name,
                     colorbar_index,
@@ -374,8 +378,47 @@ def inject_click_tools(html: str, *, initial_vertical_exaggeration: float = 1.0)
     gap: 8px;
     grid-template-columns: 1fr 42px;
   }
+  .piece-of-cake-stepper-row {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
   #piece-of-cake-exaggeration {
-    width: 100%;
+    border: 1px solid #9ca3af;
+    border-radius: 6px;
+    font: inherit;
+    padding: 5px 6px;
+    width: 72px;
+  }
+  .piece-of-cake-legend-group {
+    border-top: 1px solid #e5e7eb;
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+  .piece-of-cake-legend-title {
+    color: #374151;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .piece-of-cake-legend-item {
+    align-items: center;
+    display: grid;
+    gap: 7px;
+    grid-template-columns: 14px 1fr;
+    margin: 4px 0;
+  }
+  .piece-of-cake-legend-swatch {
+    border: 1px solid rgba(17, 24, 39, 0.24);
+    border-radius: 3px;
+    height: 14px;
+    width: 14px;
+  }
+  .piece-of-cake-legend-label {
+    color: #374151;
+    font-size: 12px;
+    overflow-wrap: anywhere;
   }
   #piece-of-cake-points {
     display: grid;
@@ -432,14 +475,20 @@ def inject_click_tools(html: str, *, initial_vertical_exaggeration: float = 1.0)
     </div>
     <div class="piece-of-cake-control">
       <label for="piece-of-cake-exaggeration">Vertical Exaggeration</label>
-      <div class="piece-of-cake-slider-row">
-        <input id="piece-of-cake-exaggeration" type="range" min="0.1" max="10" step="0.1">
-        <output id="piece-of-cake-exaggeration-value"></output>
+      <div class="piece-of-cake-stepper-row">
+        <button id="piece-of-cake-exaggeration-decrease" type="button" title="Decrease exaggeration">-</button>
+        <input id="piece-of-cake-exaggeration" type="number" min="0.1" max="20" step="0.5">
+        <button id="piece-of-cake-exaggeration-increase" type="button" title="Increase exaggeration">+</button>
+        <button id="piece-of-cake-exaggeration-reset" type="button" title="Reset exaggeration">1x</button>
       </div>
     </div>
     <div class="piece-of-cake-control" id="piece-of-cake-layer-opacity-control">
       <label>Layer Opacity</label>
       <div id="piece-of-cake-layer-opacity"></div>
+    </div>
+    <div class="piece-of-cake-control" id="piece-of-cake-layer-legend-control">
+      <label>Layer Legend</label>
+      <div id="piece-of-cake-layer-legend"></div>
     </div>
     <div class="piece-of-cake-control">
       <button id="piece-of-cake-reset-view" type="button">Reset View</button>
@@ -609,19 +658,31 @@ def inject_click_tools(html: str, *, initial_vertical_exaggeration: float = 1.0)
       return prepareVectorState(trace, index, extent);
     }).filter(Boolean);
 
-    const slider = document.getElementById("piece-of-cake-exaggeration");
-    const output = document.getElementById("piece-of-cake-exaggeration-value");
-    if (!slider || !output) return;
-    slider.max = String(Math.max(10, Math.ceil(initialExaggeration * 2)));
-    slider.value = String(initialExaggeration);
+    const input = document.getElementById("piece-of-cake-exaggeration");
+    const decrease = document.getElementById("piece-of-cake-exaggeration-decrease");
+    const increase = document.getElementById("piece-of-cake-exaggeration-increase");
+    const reset = document.getElementById("piece-of-cake-exaggeration-reset");
+    if (!input) return;
+    const maxExaggeration = Math.max(20, Math.ceil(initialExaggeration * 2));
+    const minExaggeration = 0.1;
+    const step = 0.5;
+    input.max = String(maxExaggeration);
+    input.min = String(minExaggeration);
+    input.step = String(step);
 
-    function updateLabel(value) {
-      output.textContent = fmt(value, 1) + "x";
+    function currentExaggeration() {
+      return clamp(Number(input.value) || initialExaggeration, minExaggeration, maxExaggeration);
     }
 
-    function applyExaggeration() {
-      const exaggeration = Number(slider.value);
-      updateLabel(exaggeration);
+    function setExaggeration(value, apply) {
+      const exaggeration = clamp(Number(value) || 1, minExaggeration, maxExaggeration);
+      input.value = fmt(exaggeration, 1);
+      if (apply) {
+        applyExaggeration(exaggeration);
+      }
+    }
+
+    function applyExaggeration(exaggeration) {
       const surfaceIndices = surfaceStates.map(function(state) { return state.index; });
       const surfaceZ = surfaceStates.map(function(state) {
         return zGridForSurface(state, exaggeration, extent);
@@ -645,8 +706,24 @@ def inject_click_tools(html: str, *, initial_vertical_exaggeration: float = 1.0)
       return Promise.all(updates);
     }
 
-    slider.addEventListener("input", applyExaggeration);
-    updateLabel(initialExaggeration);
+    input.addEventListener("change", function() {
+      setExaggeration(currentExaggeration(), true);
+    });
+    input.addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        setExaggeration(currentExaggeration(), true);
+      }
+    });
+    if (decrease) decrease.addEventListener("click", function() {
+      setExaggeration(currentExaggeration() - step, true);
+    });
+    if (increase) increase.addEventListener("click", function() {
+      setExaggeration(currentExaggeration() + step, true);
+    });
+    if (reset) reset.addEventListener("click", function() {
+      setExaggeration(1, true);
+    });
+    setExaggeration(initialExaggeration, false);
   }
 
   function initializeLayerOpacityControls(plot) {
@@ -692,6 +769,43 @@ def inject_click_tools(html: str, *, initial_vertical_exaggeration: float = 1.0)
       row.appendChild(label);
       container.appendChild(row);
       updateLabel();
+    });
+  }
+
+  function initializeLayerLegendControls(plot) {
+    const control = document.getElementById("piece-of-cake-layer-legend-control");
+    const container = document.getElementById("piece-of-cake-layer-legend");
+    if (!control || !container) return;
+    const legendTraces = plot.data.filter(function(trace) {
+      return trace.meta && Array.isArray(trace.meta.pieceOfCakeClasses) &&
+        trace.meta.pieceOfCakeClasses.length;
+    });
+    if (!legendTraces.length) {
+      control.style.display = "none";
+      return;
+    }
+    container.innerHTML = "";
+    legendTraces.forEach(function(trace) {
+      const group = document.createElement("div");
+      group.className = "piece-of-cake-legend-group";
+      const title = document.createElement("div");
+      title.className = "piece-of-cake-legend-title";
+      title.textContent = trace.name || "Layer";
+      group.appendChild(title);
+      trace.meta.pieceOfCakeClasses.forEach(function(item) {
+        const row = document.createElement("div");
+        row.className = "piece-of-cake-legend-item";
+        const swatch = document.createElement("span");
+        swatch.className = "piece-of-cake-legend-swatch";
+        swatch.style.background = item.color || "#cccccc";
+        const label = document.createElement("span");
+        label.className = "piece-of-cake-legend-label";
+        label.textContent = item.label || ("Class " + item.value);
+        row.appendChild(swatch);
+        row.appendChild(label);
+        group.appendChild(row);
+      });
+      container.appendChild(group);
     });
   }
 
@@ -752,6 +866,10 @@ def inject_click_tools(html: str, *, initial_vertical_exaggeration: float = 1.0)
     }
     initializeExaggerationControls(plot);
     initializeLayerOpacityControls(plot);
+    initializeLayerLegendControls(plot);
+    plot.addEventListener("contextmenu", function(event) {
+      event.preventDefault();
+    }, {capture: true});
     plot.on("plotly_click", function(event) {
       if (!captureEnabled) return;
       if (!event.points || event.points.length === 0) return;
@@ -854,18 +972,53 @@ def _raster_surface_trace(
     style = overlay.style
     z = base_z + relief * 0.006
     values = overlay.values
+    trace_text = None
+    meta = None
     if style.kind == "categorical":
         colorscale, value_map = categorical_colorscale(style)
         surfacecolor = np.full(values.shape, np.nan, dtype="float32")
+        trace_text = np.full(values.shape, "", dtype=object)
+        legend_items = []
         for raw_value, mapped_value in value_map.items():
-            surfacecolor[values == raw_value] = mapped_value
-        cmin, cmax = 0, max(len(value_map) - 1, 1)
+            mask = values == raw_value
+            if not np.any(mask):
+                continue
+            class_info = style.classes.get(raw_value, {})
+            label = class_info.get("label", f"Class {raw_value}")
+            color = class_info.get("color", "#cccccc")
+            surfacecolor[mask] = mapped_value
+            trace_text[mask] = label
+            legend_items.append(
+                {
+                    "value": raw_value,
+                    "index": mapped_value,
+                    "label": label,
+                    "color": color,
+                }
+            )
+        cmin, cmax = -0.5, max(len(value_map) - 0.5, 0.5)
+        meta = {"pieceOfCakeClasses": legend_items} if style.legend else None
+        showscale = False
+        hovertemplate = (
+            f"{overlay.name}<br>"
+            "Class %{text}<br>"
+            "Lat %{customdata[0]:.5f}<br>"
+            "Lon %{customdata[1]:.5f}<br>"
+            "Elev %{customdata[2]:.1f}<extra></extra>"
+        )
     else:
         surfacecolor = values
         colorscale = style.cmap
         finite = surfacecolor[np.isfinite(surfacecolor)]
         cmin = float(finite.min()) if finite.size else None
         cmax = float(finite.max()) if finite.size else None
+        showscale = style.legend
+        hovertemplate = (
+            f"{overlay.name}<br>"
+            "Lat %{customdata[0]:.5f}<br>"
+            "Lon %{customdata[1]:.5f}<br>"
+            "Elev %{customdata[2]:.1f}<extra></extra>"
+        )
 
     return go.Surface(
         z=z,
@@ -875,15 +1028,12 @@ def _raster_surface_trace(
         cmax=cmax,
         opacity=style.opacity,
         customdata=customdata,
+        text=trace_text,
+        meta=meta,
         name=overlay.name,
-        showscale=style.legend,
+        showscale=showscale,
         colorbar=colorbar or {"title": style.label or overlay.name},
-        hovertemplate=(
-            f"{overlay.name}<br>"
-            "Lat %{customdata[0]:.5f}<br>"
-            "Lon %{customdata[1]:.5f}<br>"
-            "Elev %{customdata[2]:.1f}<extra></extra>"
-        ),
+        hovertemplate=hovertemplate,
     )
 
 

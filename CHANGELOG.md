@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.7 - 2026-06-03
+
+- Changed categorical raster rendering to use hard color steps instead of interpolated gradients.
+- Added class-name legends for categorical drapes such as ESA WorldCover.
+- Replaced the vertical exaggeration range slider with stepper and numeric controls.
+- Suppressed the browser/Jupyter context menu on the 3D map surface so right-click panning is easier.
+
 ## 0.1.6 - 2026-06-03
 
 - Fixed overlapping colorbars when a DEM and WorldCover/raster drapes both show scales.
