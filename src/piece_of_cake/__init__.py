@@ -32,4 +32,4 @@ __all__ = [
     "setup_opentopography_key",
 ]
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"

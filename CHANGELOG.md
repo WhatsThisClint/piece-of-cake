@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.4 - 2026-06-03
+
+- Added in-view terrain controls to exported HTML.
+- Added a vertical exaggeration slider that works inside JupyterLab, Colab, and standalone HTML.
+- Added an explicit click-capture toggle so dragging and rotating do not keep saving points.
+- Moved the controls away from the right-side elevation colorbar.
+- Added reset, top-view, and center-lock camera controls.
+
 ## 0.1.3 - 2026-06-03
 
 - Added `setup_opentopography_key()` for JupyterLab and Colab workflows.

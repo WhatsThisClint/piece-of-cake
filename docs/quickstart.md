@@ -47,6 +47,10 @@ Display in a notebook:
 scene.show()
 ```
 
+The HTML viewer includes a controls panel for vertical exaggeration, reset/top
+view, center lock, and click-capture. Capture is off by default so dragging the
+terrain does not keep saving points.
+
 Use the terminal command:
 
 ```bash

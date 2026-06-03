@@ -194,7 +194,7 @@ def _package_version() -> str:
     try:
         return version("piece-of-cake-terrain")
     except PackageNotFoundError:
-        return "0.1.3"
+        return "0.1.4"
 
 
 if __name__ == "__main__":

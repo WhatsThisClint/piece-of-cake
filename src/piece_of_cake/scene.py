@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -250,7 +251,7 @@ class TerrainScene:
             div_id="piece-of-cake-map",
             config={"responsive": True, "scrollZoom": True},
         )
-        html = inject_click_tools(html)
+        html = inject_click_tools(html, initial_vertical_exaggeration=self.vertical_exaggeration)
         if path:
             Path(path).write_text(html, encoding="utf-8")
         return html
@@ -269,17 +270,20 @@ class TerrainScene:
             raise ValueError("Add a DEM first with add_dem(), add_dem_array(), or from_dem().")
 
 
-def inject_click_tools(html: str) -> str:
-    """Add a small click-to-capture sidebar to a Plotly HTML document."""
+def inject_click_tools(html: str, *, initial_vertical_exaggeration: float = 1.0) -> str:
+    """Add viewer controls to a Plotly HTML document."""
 
-    sidebar = r"""
+    initial_exaggeration = json.dumps(float(initial_vertical_exaggeration or 1.0))
+
+    sidebar = (
+        r"""
 <style>
   #piece-of-cake-panel {
     position: fixed;
-    top: 16px;
-    right: 16px;
+    left: 16px;
+    top: 64px;
     width: 300px;
-    max-height: calc(100vh - 32px);
+    max-height: min(520px, calc(100vh - 32px));
     overflow: auto;
     background: rgba(255, 255, 255, 0.94);
     border: 1px solid #d1d5db;
@@ -290,9 +294,48 @@ def inject_click_tools(html: str) -> str:
     padding: 12px;
     z-index: 9999;
   }
+  #piece-of-cake-panel.collapsed {
+    width: auto;
+    max-width: calc(100vw - 32px);
+    overflow: hidden;
+  }
+  #piece-of-cake-panel.collapsed .piece-of-cake-body {
+    display: none;
+  }
+  .piece-of-cake-header {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+  }
   #piece-of-cake-panel h2 {
     font-size: 14px;
-    margin: 0 0 8px;
+    margin: 0;
+  }
+  #piece-of-cake-panel h3 {
+    font-size: 13px;
+    margin: 10px 0 0;
+  }
+  .piece-of-cake-help {
+    color: #4b5563;
+    margin: 8px 0 10px;
+  }
+  .piece-of-cake-control {
+    margin-top: 10px;
+  }
+  .piece-of-cake-control label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .piece-of-cake-slider-row {
+    align-items: center;
+    display: grid;
+    gap: 8px;
+    grid-template-columns: 1fr 42px;
+  }
+  #piece-of-cake-exaggeration {
+    width: 100%;
   }
   #piece-of-cake-points {
     display: grid;
@@ -312,27 +355,254 @@ def inject_click_tools(html: str) -> str:
     border-radius: 6px;
     padding: 6px 9px;
     cursor: pointer;
-    margin-right: 6px;
+    margin: 0 6px 6px 0;
   }
   #piece-of-cake-panel button.primary {
     background: #14532d;
     border-color: #14532d;
     color: white;
   }
+  #piece-of-cake-panel button.active {
+    background: #0f766e;
+    border-color: #0f766e;
+    color: white;
+  }
+  @media (max-width: 640px) {
+    #piece-of-cake-panel {
+      left: 8px;
+      right: 8px;
+      top: 56px;
+      width: auto;
+    }
+  }
 </style>
 <aside id="piece-of-cake-panel">
-  <h2>Captured Points</h2>
-  <div>Click the terrain to save latitude, longitude, and elevation.</div>
-  <div id="piece-of-cake-points"></div>
-  <button class="primary" id="piece-of-cake-copy">Copy CSV</button>
-  <button id="piece-of-cake-clear">Clear</button>
+  <div class="piece-of-cake-header">
+    <h2>Terrain Controls</h2>
+    <button id="piece-of-cake-collapse" type="button" title="Collapse controls">Hide</button>
+  </div>
+  <div class="piece-of-cake-body">
+    <div class="piece-of-cake-help">
+      Turn capture on before selecting points. Leave it off while rotating or panning.
+    </div>
+    <div class="piece-of-cake-control">
+      <button id="piece-of-cake-capture-toggle" type="button">Capture Off</button>
+      <button id="piece-of-cake-copy" type="button">Copy CSV</button>
+      <button id="piece-of-cake-clear" type="button">Clear</button>
+    </div>
+    <div class="piece-of-cake-control">
+      <label for="piece-of-cake-exaggeration">Vertical Exaggeration</label>
+      <div class="piece-of-cake-slider-row">
+        <input id="piece-of-cake-exaggeration" type="range" min="0.1" max="10" step="0.1">
+        <output id="piece-of-cake-exaggeration-value"></output>
+      </div>
+    </div>
+    <div class="piece-of-cake-control">
+      <button id="piece-of-cake-reset-view" type="button">Reset View</button>
+      <button id="piece-of-cake-top-view" type="button">Top View</button>
+      <button id="piece-of-cake-center-lock" type="button">Center Lock Off</button>
+    </div>
+    <h3>Captured Points</h3>
+    <div id="piece-of-cake-points"></div>
+  </div>
 </aside>
 <script>
 (function() {
   const points = [];
+  const initialExaggeration = """
+        + initial_exaggeration
+        + r""";
+  let captureEnabled = false;
+  let centerLockEnabled = false;
+  let enforcingCenter = false;
+  const centeredCamera = {center: {x: 0, y: 0, z: 0}};
+  const resetCamera = {
+    eye: {x: 1.45, y: 1.45, z: 0.9},
+    center: {x: 0, y: 0, z: 0},
+    up: {x: 0, y: 0, z: 1}
+  };
+  const topCamera = {
+    eye: {x: 0, y: 0, z: 2.4},
+    center: {x: 0, y: 0, z: 0},
+    up: {x: 0, y: 1, z: 0}
+  };
+  let surfaceStates = [];
+  let vectorStates = [];
+  let baseGrid = null;
+  let baseRelief = 1;
 
   function fmt(value, digits) {
     return Number.isFinite(value) ? value.toFixed(digits) : "";
+  }
+
+  function clamp(value, minimum, maximum) {
+    return Math.min(Math.max(value, minimum), maximum);
+  }
+
+  function finiteNumber(value) {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : null;
+  }
+
+  function toNestedArray(value) {
+    if (value && value._inputArray) {
+      return toNestedArray(value._inputArray);
+    }
+    if (Array.isArray(value) || ArrayBuffer.isView(value)) {
+      return Array.from(value).map(toNestedArray);
+    }
+    if (value && typeof value === "object") {
+      const keys = Object.keys(value).filter(function(key) {
+        return String(Number(key)) === key;
+      }).sort(function(a, b) {
+        return Number(a) - Number(b);
+      });
+      if (keys.length) {
+        return keys.map(function(key) {
+          return toNestedArray(value[key]);
+        });
+      }
+    }
+    return value;
+  }
+
+  function extractElevationGrid(customdata) {
+    const nested = toNestedArray(customdata);
+    if (!Array.isArray(nested)) return null;
+    const grid = nested.map(function(row) {
+      if (!Array.isArray(row)) return [];
+      return row.map(function(cell) {
+        if (!Array.isArray(cell)) return null;
+        return finiteNumber(cell[2]);
+      });
+    });
+    return grid.length && grid[0].length ? grid : null;
+  }
+
+  function gridExtent(grid) {
+    let minimum = Infinity;
+    let maximum = -Infinity;
+    grid.forEach(function(row) {
+      row.forEach(function(value) {
+        if (Number.isFinite(value)) {
+          minimum = Math.min(minimum, value);
+          maximum = Math.max(maximum, value);
+        }
+      });
+    });
+    if (!Number.isFinite(minimum) || !Number.isFinite(maximum)) {
+      return {minimum: 0, maximum: 1, relief: 1};
+    }
+    return {minimum: minimum, maximum: maximum, relief: Math.max(maximum - minimum, 1)};
+  }
+
+  function prepareSurfaceState(trace, index, extent) {
+    const elevationGrid = extractElevationGrid(trace.customdata);
+    const zGrid = toNestedArray(trace.z);
+    if (!elevationGrid || !Array.isArray(zGrid)) return null;
+    const initialRelief = extent.relief * initialExaggeration;
+    const offsetRatios = elevationGrid.map(function(row, rowIndex) {
+      return row.map(function(elevation, colIndex) {
+        const initialZ = finiteNumber(zGrid[rowIndex] && zGrid[rowIndex][colIndex]);
+        if (!Number.isFinite(elevation) || !Number.isFinite(initialZ) || initialRelief === 0) {
+          return 0;
+        }
+        const initialBase = (elevation - extent.minimum) * initialExaggeration;
+        return (initialZ - initialBase) / initialRelief;
+      });
+    });
+    return {index: index, elevationGrid: elevationGrid, offsetRatios: offsetRatios};
+  }
+
+  function zGridForSurface(state, exaggeration, extent) {
+    const relief = extent.relief * exaggeration;
+    return state.elevationGrid.map(function(row, rowIndex) {
+      return row.map(function(elevation, colIndex) {
+        if (!Number.isFinite(elevation)) return null;
+        return ((elevation - extent.minimum) * exaggeration) +
+          ((state.offsetRatios[rowIndex][colIndex] || 0) * relief);
+      });
+    });
+  }
+
+  function sampleBaseGrid(x, y) {
+    if (!baseGrid || !baseGrid.length || !baseGrid[0].length) return null;
+    const row = clamp(Math.round(Number(y)), 0, baseGrid.length - 1);
+    const col = clamp(Math.round(Number(x)), 0, baseGrid[0].length - 1);
+    return baseGrid[row][col];
+  }
+
+  function prepareVectorState(trace, index, extent) {
+    if (trace.type !== "scatter3d" || !Array.isArray(trace.x) || !Array.isArray(trace.y)) return null;
+    const baseValues = trace.x.map(function(x, idx) {
+      const elevation = sampleBaseGrid(x, trace.y[idx]);
+      return Number.isFinite(elevation) ? elevation - extent.minimum : null;
+    });
+    if (!baseValues.some(Number.isFinite)) return null;
+    return {index: index, baseValues: baseValues};
+  }
+
+  function zArrayForVector(state, exaggeration, extent) {
+    const lift = extent.relief * exaggeration * 0.01;
+    return state.baseValues.map(function(value) {
+      return Number.isFinite(value) ? value * exaggeration + lift : null;
+    });
+  }
+
+  function initializeExaggerationControls(plot) {
+    const firstSurface = plot.data.find(function(trace) {
+      return trace.type === "surface" && trace.customdata;
+    });
+    baseGrid = firstSurface ? extractElevationGrid(firstSurface.customdata) : null;
+    if (!baseGrid) return;
+    const extent = gridExtent(baseGrid);
+    baseRelief = extent.relief;
+    surfaceStates = plot.data.map(function(trace, index) {
+      if (trace.type !== "surface") return null;
+      return prepareSurfaceState(trace, index, extent);
+    }).filter(Boolean);
+    vectorStates = plot.data.map(function(trace, index) {
+      return prepareVectorState(trace, index, extent);
+    }).filter(Boolean);
+
+    const slider = document.getElementById("piece-of-cake-exaggeration");
+    const output = document.getElementById("piece-of-cake-exaggeration-value");
+    if (!slider || !output) return;
+    slider.max = String(Math.max(10, Math.ceil(initialExaggeration * 2)));
+    slider.value = String(initialExaggeration);
+
+    function updateLabel(value) {
+      output.textContent = fmt(value, 1) + "x";
+    }
+
+    function applyExaggeration() {
+      const exaggeration = Number(slider.value);
+      updateLabel(exaggeration);
+      const surfaceIndices = surfaceStates.map(function(state) { return state.index; });
+      const surfaceZ = surfaceStates.map(function(state) {
+        return zGridForSurface(state, exaggeration, extent);
+      });
+      const updates = [];
+      if (surfaceIndices.length) {
+        updates.push(Plotly.restyle(plot, {z: surfaceZ}, surfaceIndices));
+      }
+      const vectorIndices = vectorStates.map(function(state) { return state.index; });
+      const vectorZ = vectorStates.map(function(state) {
+        return zArrayForVector(state, exaggeration, extent);
+      });
+      if (vectorIndices.length) {
+        updates.push(Plotly.restyle(plot, {z: vectorZ}, vectorIndices));
+      }
+      const zRatio = clamp(0.12 + (exaggeration / Math.max(baseRelief, 1)) * 12, 0.12, 0.85);
+      updates.push(Plotly.relayout(plot, {
+        "scene.aspectratio.z": zRatio,
+        "scene.zaxis.autorange": true
+      }));
+      return Promise.all(updates);
+    }
+
+    slider.addEventListener("input", applyExaggeration);
+    updateLabel(initialExaggeration);
   }
 
   function render() {
@@ -354,7 +624,34 @@ def inject_click_tools(html: str) -> str:
     const csv = "index,lat,lon,elevation\n" + points.map(function(p, idx) {
       return [idx + 1, p.lat, p.lon, p.elev].join(",");
     }).join("\n");
-    navigator.clipboard.writeText(csv);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(csv);
+      return;
+    }
+    const textarea = document.createElement("textarea");
+    textarea.value = csv;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+  }
+
+  function updateCaptureButton() {
+    const button = document.getElementById("piece-of-cake-capture-toggle");
+    if (!button) return;
+    button.textContent = captureEnabled ? "Capture On" : "Capture Off";
+    button.classList.toggle("active", captureEnabled);
+  }
+
+  function updateCenterLockButton() {
+    const button = document.getElementById("piece-of-cake-center-lock");
+    if (!button) return;
+    button.textContent = centerLockEnabled ? "Center Lock On" : "Center Lock Off";
+    button.classList.toggle("active", centerLockEnabled);
+  }
+
+  function relayoutCamera(plot, camera) {
+    return Plotly.relayout(plot, {"scene.camera": camera});
   }
 
   function attach() {
@@ -363,7 +660,9 @@ def inject_click_tools(html: str) -> str:
       window.setTimeout(attach, 100);
       return;
     }
+    initializeExaggerationControls(plot);
     plot.on("plotly_click", function(event) {
+      if (!captureEnabled) return;
       if (!event.points || event.points.length === 0) return;
       const point = event.points[0];
       const data = point.customdata || [];
@@ -374,18 +673,56 @@ def inject_click_tools(html: str) -> str:
       points.push({lat: lat, lon: lon, elev: elev});
       render();
     });
+    plot.on("plotly_relayout", function(event) {
+      if (!centerLockEnabled || enforcingCenter || !event || !event["scene.camera"]) return;
+      enforcingCenter = true;
+      const camera = Object.assign({}, event["scene.camera"], centeredCamera);
+      relayoutCamera(plot, camera).finally(function() {
+        enforcingCenter = false;
+      });
+    });
+
+    const resetButton = document.getElementById("piece-of-cake-reset-view");
+    if (resetButton) resetButton.addEventListener("click", function() {
+      relayoutCamera(plot, resetCamera);
+    });
+    const topButton = document.getElementById("piece-of-cake-top-view");
+    if (topButton) topButton.addEventListener("click", function() {
+      relayoutCamera(plot, topCamera);
+    });
+    const centerLockButton = document.getElementById("piece-of-cake-center-lock");
+    if (centerLockButton) centerLockButton.addEventListener("click", function() {
+      centerLockEnabled = !centerLockEnabled;
+      updateCenterLockButton();
+      if (centerLockEnabled) {
+        relayoutCamera(plot, centeredCamera);
+      }
+    });
   }
 
+  document.getElementById("piece-of-cake-capture-toggle").addEventListener("click", function() {
+    captureEnabled = !captureEnabled;
+    updateCaptureButton();
+  });
   document.getElementById("piece-of-cake-copy").addEventListener("click", copyCsv);
   document.getElementById("piece-of-cake-clear").addEventListener("click", function() {
     points.length = 0;
     render();
   });
+  document.getElementById("piece-of-cake-collapse").addEventListener("click", function(event) {
+    const panel = document.getElementById("piece-of-cake-panel");
+    if (!panel) return;
+    const collapsed = panel.classList.toggle("collapsed");
+    event.target.textContent = collapsed ? "Show" : "Hide";
+  });
+  updateCaptureButton();
+  updateCenterLockButton();
   render();
   attach();
 })();
 </script>
 """
+    )
     return html.replace("</body>", sidebar + "\n</body>")
 
 

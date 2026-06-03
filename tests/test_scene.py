@@ -9,7 +9,12 @@ def test_scene_exports_clickable_html():
 
     assert "piece-of-cake-map" in html
     assert "plotly_click" in html
-    assert "Captured Points" in html
+    assert "Terrain Controls" in html
+    assert "Capture Off" in html
+    assert "Vertical Exaggeration" in html
+    assert "Center Lock Off" in html
+    assert "piece-of-cake-exaggeration" in html
+    assert "plotly_relayout" in html
     assert "Number.isFinite" in html
 
 
