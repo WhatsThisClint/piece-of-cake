@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.8 - 2026-06-03
+
+- Added a rotating north compass to the exported HTML viewer.
+- Changed categorical raster drapes to render as separate solid class masks to reduce interpolated boundary halos.
+- Grouped opacity controls so one categorical layer slider adjusts all of its class masks.
+
 ## 0.1.7 - 2026-06-03
 
 - Changed categorical raster rendering to use hard color steps instead of interpolated gradients.

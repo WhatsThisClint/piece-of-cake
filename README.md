@@ -1,7 +1,7 @@
 # Piece of Cake
 
 [PyPI package](https://pypi.org/project/piece-of-cake-terrain/) |
-[GitHub release](https://github.com/WhatsThisClint/piece-of-cake/releases/tag/v0.1.7)
+[GitHub release](https://github.com/WhatsThisClint/piece-of-cake/releases/tag/v0.1.8)
 
 Piece of Cake builds interactive 3D terrain scenes from DEMs, rasters, vectors, and configurable geospatial styles.
 
@@ -14,6 +14,7 @@ It is deliberately focused on the 3D model. Give it a DEM and optional layers, t
 - Draws vector overlays from GeoPackages, shapefiles, GeoJSON, or other GeoPandas-readable formats.
 - Lets users toggle click-capture for latitude, longitude, and elevation.
 - Lets users change vertical exaggeration inside the HTML viewer with stepper controls.
+- Shows a rotating north compass in the HTML viewer.
 - Fetches and drapes ESA WorldCover land-cover classes for the selected extent.
 - Shows categorical layer legends with class names instead of numeric gradients.
 - Exports standalone HTML.
@@ -56,7 +57,7 @@ pip install "piece-of-cake-terrain[geo,places]"
 From GitHub source:
 
 ```bash
-pip install "piece-of-cake-terrain[geo,places,providers] @ git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.7"
+pip install "piece-of-cake-terrain[geo,places,providers] @ git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.8"
 ```
 
 For an isolated terminal command:

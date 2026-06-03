@@ -12,6 +12,8 @@ def test_scene_exports_clickable_html():
     assert "plotly_click" in html
     assert "Terrain Controls" in html
     assert "Capture Off" in html
+    assert "piece-of-cake-compass-arrow" in html
+    assert "updateCompass" in html
     assert "Vertical Exaggeration" in html
     assert "Center Lock Off" in html
     assert "piece-of-cake-exaggeration" in html
@@ -20,6 +22,8 @@ def test_scene_exports_clickable_html():
     assert 'id="piece-of-cake-exaggeration" type="range"' not in html
     assert "Layer Opacity" in html
     assert "Layer Legend" in html
+    assert "pieceOfCakeLayerId" in html
+    assert "item.indices" in html
     assert "contextmenu" in html
     assert "plotly_relayout" in html
     assert "Number.isFinite" in html
@@ -83,16 +87,25 @@ def test_categorical_worldcover_uses_class_legend_not_numeric_colorbar():
 
     fig = scene.to_figure()
     colorbars = [trace.colorbar for trace in fig.data if getattr(trace, "showscale", False)]
-    worldcover_trace = fig.data[1]
+    worldcover_traces = fig.data[1:]
 
     assert len(colorbars) == 1
     assert fig.layout.margin.r >= 100
-    assert worldcover_trace.showscale is False
-    assert worldcover_trace.cmin == -0.5
-    assert worldcover_trace.cmax == 10.5
-    assert worldcover_trace.meta["pieceOfCakeClasses"] == [
+    assert len(worldcover_traces) == 4
+    assert all(trace.showscale is False for trace in worldcover_traces)
+    assert all(trace.cmin == 0 for trace in worldcover_traces)
+    assert all(trace.cmax == 1 for trace in worldcover_traces)
+    assert all(trace.meta["pieceOfCakeLayerId"] == "raster-0" for trace in worldcover_traces)
+    assert [trace.name for trace in worldcover_traces] == [
+        "ESA WorldCover: Tree cover",
+        "ESA WorldCover: Cropland",
+        "ESA WorldCover: Built-up",
+        "ESA WorldCover: Permanent water bodies",
+    ]
+    assert worldcover_traces[0].meta["pieceOfCakeClasses"] == [
         {"value": 10, "index": 0, "label": "Tree cover", "color": "#006400"},
         {"value": 40, "index": 3, "label": "Cropland", "color": "#f096ff"},
         {"value": 50, "index": 4, "label": "Built-up", "color": "#fa0000"},
         {"value": 80, "index": 7, "label": "Permanent water bodies", "color": "#0064c8"},
     ]
+    assert all("pieceOfCakeClasses" not in trace.meta for trace in worldcover_traces[1:])

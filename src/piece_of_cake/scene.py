@@ -257,7 +257,7 @@ class TerrainScene:
         colorbar_index += 1
         relief = _safe_relief(z)
 
-        for overlay in self.raster_overlays:
+        for overlay_index, overlay in enumerate(self.raster_overlays):
             colorbar = None
             if overlay.style.legend and overlay.style.kind != "categorical":
                 colorbar = _surface_colorbar(
@@ -266,7 +266,16 @@ class TerrainScene:
                     colorbar_total,
                 )
                 colorbar_index += 1
-            traces.append(_raster_surface_trace(overlay, z, relief, customdata, colorbar))
+            traces.extend(
+                _raster_surface_trace(
+                    overlay,
+                    z,
+                    relief,
+                    customdata,
+                    colorbar,
+                    layer_id=f"raster-{overlay_index}",
+                )
+            )
 
         for overlay in self.vector_overlays:
             traces.extend(_vector_traces(overlay, z, self.bounds))
@@ -363,6 +372,62 @@ def inject_click_tools(html: str, *, initial_vertical_exaggeration: float = 1.0)
   .piece-of-cake-help {
     color: #4b5563;
     margin: 8px 0 10px;
+  }
+  .piece-of-cake-compass-row {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .piece-of-cake-compass-dial {
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #9ca3af;
+    border-radius: 999px;
+    display: flex;
+    height: 54px;
+    justify-content: center;
+    position: relative;
+    width: 54px;
+  }
+  .piece-of-cake-compass-arrow {
+    height: 34px;
+    position: relative;
+    transform-origin: 50% 50%;
+    transition: transform 120ms ease-out;
+    width: 18px;
+  }
+  .piece-of-cake-compass-arrow::before {
+    border-left: 9px solid transparent;
+    border-right: 9px solid transparent;
+    border-bottom: 22px solid #dc2626;
+    content: "";
+    left: 0;
+    position: absolute;
+    top: 0;
+  }
+  .piece-of-cake-compass-arrow::after {
+    background: #111827;
+    border-radius: 999px;
+    content: "";
+    height: 18px;
+    left: 7px;
+    position: absolute;
+    top: 18px;
+    width: 4px;
+  }
+  .piece-of-cake-compass-n {
+    color: #111827;
+    font-size: 11px;
+    font-weight: 700;
+    left: 50%;
+    position: absolute;
+    top: 3px;
+    transform: translateX(-50%);
+  }
+  .piece-of-cake-compass-label {
+    color: #374151;
+    font-size: 12px;
   }
   .piece-of-cake-control {
     margin-top: 10px;
@@ -467,6 +532,13 @@ def inject_click_tools(html: str, *, initial_vertical_exaggeration: float = 1.0)
   <div class="piece-of-cake-body">
     <div class="piece-of-cake-help">
       Turn capture on before selecting points. Leave it off while rotating or panning.
+    </div>
+    <div class="piece-of-cake-compass-row" aria-label="North compass">
+      <div class="piece-of-cake-compass-dial" title="North compass">
+        <div class="piece-of-cake-compass-n">N</div>
+        <div id="piece-of-cake-compass-arrow" class="piece-of-cake-compass-arrow"></div>
+      </div>
+      <div class="piece-of-cake-compass-label">North</div>
     </div>
     <div class="piece-of-cake-control">
       <button id="piece-of-cake-capture-toggle" type="button">Capture Off</button>
@@ -642,6 +714,25 @@ def inject_click_tools(html: str, *, initial_vertical_exaggeration: float = 1.0)
     });
   }
 
+  function updateCompass(camera) {
+    const arrow = document.getElementById("piece-of-cake-compass-arrow");
+    if (!arrow) return;
+    const eye = camera && camera.eye ? camera.eye : resetCamera.eye;
+    const eyeX = Number(eye.x);
+    const eyeY = Number(eye.y);
+    if (!Number.isFinite(eyeX) || !Number.isFinite(eyeY) || (eyeX === 0 && eyeY === 0)) {
+      arrow.style.transform = "rotate(0deg)";
+      return;
+    }
+    const angle = Math.atan2(eyeX, -eyeY) * 180 / Math.PI;
+    arrow.style.transform = "rotate(" + angle + "deg)";
+  }
+
+  function currentCamera(plot) {
+    return plot && plot._fullLayout && plot._fullLayout.scene ?
+      plot._fullLayout.scene.camera : null;
+  }
+
   function initializeExaggerationControls(plot) {
     const firstSurface = plot.data.find(function(trace) {
       return trace.type === "surface" && trace.customdata;
@@ -730,17 +821,30 @@ def inject_click_tools(html: str, *, initial_vertical_exaggeration: float = 1.0)
     const control = document.getElementById("piece-of-cake-layer-opacity-control");
     const container = document.getElementById("piece-of-cake-layer-opacity");
     if (!control || !container) return;
-    const overlays = plot.data.map(function(trace, index) {
-      return {trace: trace, index: index};
-    }).filter(function(item, position) {
-      return item.trace.type === "surface" && position > 0;
+    const layerGroups = [];
+    const layerMap = new Map();
+    plot.data.forEach(function(trace, index) {
+      if (trace.type !== "surface" || index === 0) return;
+      const meta = trace.meta || {};
+      const layerId = meta.pieceOfCakeLayerId || ("trace-" + index);
+      let group = layerMap.get(layerId);
+      if (!group) {
+        group = {
+          indices: [],
+          name: meta.pieceOfCakeLayerName || trace.name || "Layer",
+          opacity: Number.isFinite(Number(trace.opacity)) ? trace.opacity : 0.7
+        };
+        layerMap.set(layerId, group);
+        layerGroups.push(group);
+      }
+      group.indices.push(index);
     });
-    if (!overlays.length) {
+    if (!layerGroups.length) {
       control.style.display = "none";
       return;
     }
     container.innerHTML = "";
-    overlays.forEach(function(item) {
+    layerGroups.forEach(function(item) {
       const row = document.createElement("div");
       row.className = "piece-of-cake-slider-row";
       const slider = document.createElement("input");
@@ -748,19 +852,19 @@ def inject_click_tools(html: str, *, initial_vertical_exaggeration: float = 1.0)
       slider.min = "0";
       slider.max = "1";
       slider.step = "0.05";
-      slider.value = String(Number.isFinite(Number(item.trace.opacity)) ? item.trace.opacity : 0.7);
+      slider.value = String(item.opacity);
       const label = document.createElement("output");
       function updateLabel() {
         label.textContent = Math.round(Number(slider.value) * 100) + "%";
       }
-      slider.title = item.trace.name || "Layer";
-      slider.setAttribute("aria-label", (item.trace.name || "Layer") + " opacity");
+      slider.title = item.name || "Layer";
+      slider.setAttribute("aria-label", (item.name || "Layer") + " opacity");
       slider.addEventListener("input", function() {
         updateLabel();
-        Plotly.restyle(plot, {opacity: Number(slider.value)}, [item.index]);
+        Plotly.restyle(plot, {opacity: Number(slider.value)}, item.indices);
       });
       const name = document.createElement("div");
-      name.textContent = item.trace.name || "Layer";
+      name.textContent = item.name || "Layer";
       name.style.gridColumn = "1 / span 2";
       name.style.fontSize = "12px";
       name.style.color = "#4b5563";
@@ -855,6 +959,7 @@ def inject_click_tools(html: str, *, initial_vertical_exaggeration: float = 1.0)
   }
 
   function relayoutCamera(plot, camera) {
+    updateCompass(camera);
     return Plotly.relayout(plot, {"scene.camera": camera});
   }
 
@@ -867,6 +972,7 @@ def inject_click_tools(html: str, *, initial_vertical_exaggeration: float = 1.0)
     initializeExaggerationControls(plot);
     initializeLayerOpacityControls(plot);
     initializeLayerLegendControls(plot);
+    updateCompass(currentCamera(plot) || resetCamera);
     plot.addEventListener("contextmenu", function(event) {
       event.preventDefault();
     }, {capture: true});
@@ -883,6 +989,9 @@ def inject_click_tools(html: str, *, initial_vertical_exaggeration: float = 1.0)
       render();
     });
     plot.on("plotly_relayout", function(event) {
+      if (event && event["scene.camera"]) {
+        updateCompass(event["scene.camera"]);
+      }
       if (!centerLockEnabled || enforcingCenter || !event || !event["scene.camera"]) return;
       enforcingCenter = true;
       const camera = Object.assign({}, event["scene.camera"], centeredCamera);
@@ -968,73 +1077,118 @@ def _raster_surface_trace(
     relief: float,
     customdata: np.ndarray,
     colorbar: dict[str, Any] | None,
-) -> go.Surface:
+    *,
+    layer_id: str,
+) -> list[go.Surface]:
     style = overlay.style
     z = base_z + relief * 0.006
     values = overlay.values
-    trace_text = None
-    meta = None
     if style.kind == "categorical":
-        colorscale, value_map = categorical_colorscale(style)
-        surfacecolor = np.full(values.shape, np.nan, dtype="float32")
-        trace_text = np.full(values.shape, "", dtype=object)
-        legend_items = []
-        for raw_value, mapped_value in value_map.items():
-            mask = values == raw_value
-            if not np.any(mask):
-                continue
-            class_info = style.classes.get(raw_value, {})
-            label = class_info.get("label", f"Class {raw_value}")
-            color = class_info.get("color", "#cccccc")
-            surfacecolor[mask] = mapped_value
-            trace_text[mask] = label
-            legend_items.append(
-                {
-                    "value": raw_value,
-                    "index": mapped_value,
-                    "label": label,
-                    "color": color,
-                }
-            )
-        cmin, cmax = -0.5, max(len(value_map) - 0.5, 0.5)
-        meta = {"pieceOfCakeClasses": legend_items} if style.legend else None
-        showscale = False
-        hovertemplate = (
-            f"{overlay.name}<br>"
-            "Class %{text}<br>"
-            "Lat %{customdata[0]:.5f}<br>"
-            "Lon %{customdata[1]:.5f}<br>"
-            "Elev %{customdata[2]:.1f}<extra></extra>"
-        )
-    else:
-        surfacecolor = values
-        colorscale = style.cmap
-        finite = surfacecolor[np.isfinite(surfacecolor)]
-        cmin = float(finite.min()) if finite.size else None
-        cmax = float(finite.max()) if finite.size else None
-        showscale = style.legend
-        hovertemplate = (
-            f"{overlay.name}<br>"
-            "Lat %{customdata[0]:.5f}<br>"
-            "Lon %{customdata[1]:.5f}<br>"
-            "Elev %{customdata[2]:.1f}<extra></extra>"
+        return _categorical_raster_surface_traces(
+            overlay,
+            z,
+            values,
+            customdata,
+            layer_id=layer_id,
         )
 
-    return go.Surface(
-        z=z,
-        surfacecolor=surfacecolor,
-        colorscale=colorscale,
-        cmin=cmin,
-        cmax=cmax,
-        opacity=style.opacity,
-        customdata=customdata,
-        text=trace_text,
-        meta=meta,
-        name=overlay.name,
-        showscale=showscale,
-        colorbar=colorbar or {"title": style.label or overlay.name},
-        hovertemplate=hovertemplate,
-    )
+    surfacecolor = values
+    finite = surfacecolor[np.isfinite(surfacecolor)]
+    cmin = float(finite.min()) if finite.size else None
+    cmax = float(finite.max()) if finite.size else None
+    return [
+        go.Surface(
+            z=z,
+            surfacecolor=surfacecolor,
+            colorscale=style.cmap,
+            cmin=cmin,
+            cmax=cmax,
+            opacity=style.opacity,
+            customdata=customdata,
+            meta={
+                "pieceOfCakeLayerId": layer_id,
+                "pieceOfCakeLayerName": overlay.name,
+            },
+            name=overlay.name,
+            showscale=style.legend,
+            colorbar=colorbar or {"title": style.label or overlay.name},
+            hovertemplate=(
+                f"{overlay.name}<br>"
+                "Lat %{customdata[0]:.5f}<br>"
+                "Lon %{customdata[1]:.5f}<br>"
+                "Elev %{customdata[2]:.1f}<extra></extra>"
+            ),
+        )
+    ]
+
+
+def _categorical_raster_surface_traces(
+    overlay: RasterOverlay,
+    z: np.ndarray,
+    values: np.ndarray,
+    customdata: np.ndarray,
+    *,
+    layer_id: str,
+) -> list[go.Surface]:
+    style = overlay.style
+    _colorscale, value_map = categorical_colorscale(style)
+    legend_items = []
+    class_masks: list[tuple[Any, int, str, str, np.ndarray]] = []
+    for raw_value, mapped_value in value_map.items():
+        mask = values == raw_value
+        if not np.any(mask):
+            continue
+        class_info = style.classes.get(raw_value, {})
+        label = class_info.get("label", f"Class {raw_value}")
+        color = class_info.get("color", "#cccccc")
+        legend_items.append(
+            {
+                "value": raw_value,
+                "index": mapped_value,
+                "label": label,
+                "color": color,
+            }
+        )
+        class_masks.append((raw_value, mapped_value, label, color, mask))
+
+    traces = []
+    for idx, (raw_value, mapped_value, label, color, mask) in enumerate(class_masks):
+        z_masked = np.where(mask, z, np.nan)
+        surfacecolor = np.where(mask, 1.0, np.nan)
+        trace_text = np.full(values.shape, label, dtype=object)
+        meta = {
+            "pieceOfCakeLayerId": layer_id,
+            "pieceOfCakeLayerName": overlay.name,
+            "pieceOfCakeClassValue": raw_value,
+            "pieceOfCakeClassIndex": mapped_value,
+            "pieceOfCakeClassLabel": label,
+        }
+        if idx == 0 and style.legend:
+            meta["pieceOfCakeClasses"] = legend_items
+        traces.append(
+            go.Surface(
+                z=z_masked,
+                surfacecolor=surfacecolor,
+                colorscale=[[0.0, color], [1.0, color]],
+                cmin=0,
+                cmax=1,
+                opacity=style.opacity,
+                customdata=customdata,
+                text=trace_text,
+                meta=meta,
+                name=f"{overlay.name}: {label}",
+                showscale=False,
+                showlegend=False,
+                hovertemplate=(
+                    f"{overlay.name}<br>"
+                    "Class %{text}<br>"
+                    "Lat %{customdata[0]:.5f}<br>"
+                    "Lon %{customdata[1]:.5f}<br>"
+                    "Elev %{customdata[2]:.1f}<extra></extra>"
+                ),
+            )
+        )
+    return traces
 
 
 def _surface_colorbar(title: str, index: int, total: int) -> dict[str, Any]:

@@ -160,3 +160,5 @@ scene.add_worldcover(year="2021", opacity=0.45)
 
 The HTML viewer includes layer opacity controls and a class-name legend, so
 users can adjust and interpret the WorldCover drape without rerunning Python.
+WorldCover classes are rendered as solid class masks to reduce interpolated
+class-boundary halos in 3D.
