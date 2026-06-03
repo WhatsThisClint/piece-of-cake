@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.5 - 2026-06-03
+
+- Added `TerrainScene.add_worldcover()` to fetch and drape ESA WorldCover land cover.
+- Added ESA WorldCover tile URL resolution for the public AWS COG bucket.
+- Added layer opacity sliders to the HTML viewer for draped raster surfaces.
+- Added CLI `--worldcover` and `--worldcover-opacity` options.
+- Added OpenTopography API key signup guidance to the hidden notebook prompt.
+
 ## 0.1.4 - 2026-06-03
 
 - Added in-view terrain controls to exported HTML.

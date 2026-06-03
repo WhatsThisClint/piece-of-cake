@@ -12,7 +12,13 @@ import plotly.graph_objects as go
 
 from .bounds import Bounds
 from .io import read_raster_grid, read_vector
-from .providers import ConfigInput, DemProvider, build_dem_provider
+from .providers import (
+    ConfigInput,
+    DemProvider,
+    EsaWorldCoverProvider,
+    RasterProvider,
+    build_dem_provider,
+)
 from .styles import StyleProfile, auto_style, categorical_colorscale
 
 
@@ -168,6 +174,29 @@ class TerrainScene:
         )
         profile = StyleProfile.from_value(style) if style else auto_style(values)
         self.raster_overlays.append(RasterOverlay(name=name, values=values, style=profile))
+        return self
+
+    def add_worldcover(
+        self,
+        *,
+        name: str = "ESA WorldCover",
+        year: str = "latest",
+        provider: RasterProvider | None = None,
+        opacity: float | None = None,
+    ) -> "TerrainScene":
+        """Fetch and drape ESA WorldCover land-cover classes for the scene bounds."""
+
+        self._require_dem()
+        assert self.dem is not None
+        height, width = self.dem.shape
+        raster_provider = provider or EsaWorldCoverProvider(year=year)
+        values, _ = raster_provider.fetch_raster(self.bounds, width=width, height=height)
+        profile = StyleProfile.from_value("esa_worldcover")
+        if opacity is not None:
+            profile.opacity = opacity
+        self.raster_overlays.append(
+            RasterOverlay(name=name, values=np.asarray(values, dtype="float32"), style=profile)
+        )
         return self
 
     def add_vector(
@@ -397,6 +426,10 @@ def inject_click_tools(html: str, *, initial_vertical_exaggeration: float = 1.0)
         <output id="piece-of-cake-exaggeration-value"></output>
       </div>
     </div>
+    <div class="piece-of-cake-control" id="piece-of-cake-layer-opacity-control">
+      <label>Layer Opacity</label>
+      <div id="piece-of-cake-layer-opacity"></div>
+    </div>
     <div class="piece-of-cake-control">
       <button id="piece-of-cake-reset-view" type="button">Reset View</button>
       <button id="piece-of-cake-top-view" type="button">Top View</button>
@@ -605,6 +638,52 @@ def inject_click_tools(html: str, *, initial_vertical_exaggeration: float = 1.0)
     updateLabel(initialExaggeration);
   }
 
+  function initializeLayerOpacityControls(plot) {
+    const control = document.getElementById("piece-of-cake-layer-opacity-control");
+    const container = document.getElementById("piece-of-cake-layer-opacity");
+    if (!control || !container) return;
+    const overlays = plot.data.map(function(trace, index) {
+      return {trace: trace, index: index};
+    }).filter(function(item, position) {
+      return item.trace.type === "surface" && position > 0;
+    });
+    if (!overlays.length) {
+      control.style.display = "none";
+      return;
+    }
+    container.innerHTML = "";
+    overlays.forEach(function(item) {
+      const row = document.createElement("div");
+      row.className = "piece-of-cake-slider-row";
+      const slider = document.createElement("input");
+      slider.type = "range";
+      slider.min = "0";
+      slider.max = "1";
+      slider.step = "0.05";
+      slider.value = String(Number.isFinite(Number(item.trace.opacity)) ? item.trace.opacity : 0.7);
+      const label = document.createElement("output");
+      function updateLabel() {
+        label.textContent = Math.round(Number(slider.value) * 100) + "%";
+      }
+      slider.title = item.trace.name || "Layer";
+      slider.setAttribute("aria-label", (item.trace.name || "Layer") + " opacity");
+      slider.addEventListener("input", function() {
+        updateLabel();
+        Plotly.restyle(plot, {opacity: Number(slider.value)}, [item.index]);
+      });
+      const name = document.createElement("div");
+      name.textContent = item.trace.name || "Layer";
+      name.style.gridColumn = "1 / span 2";
+      name.style.fontSize = "12px";
+      name.style.color = "#4b5563";
+      row.appendChild(name);
+      row.appendChild(slider);
+      row.appendChild(label);
+      container.appendChild(row);
+      updateLabel();
+    });
+  }
+
   function render() {
     const list = document.getElementById("piece-of-cake-points");
     if (!list) return;
@@ -661,6 +740,7 @@ def inject_click_tools(html: str, *, initial_vertical_exaggeration: float = 1.0)
       return;
     }
     initializeExaggerationControls(plot);
+    initializeLayerOpacityControls(plot);
     plot.on("plotly_click", function(event) {
       if (!captureEnabled) return;
       if (!event.points || event.points.length === 0) return;

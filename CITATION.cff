@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use Piece of Cake in research, reports, or public tools, please cite it."
 title: "Piece of Cake"
-version: 0.1.4
+version: 0.1.5
 date-released: 2026-06-03
 authors:
   - family-names: Fernandes

@@ -69,6 +69,19 @@ scene.add_dem(source="opentopography", width=500)
 scene.to_html("terrain.html")
 ```
 
+The hidden prompt includes a link to the MyOpenTopo dashboard. Sign in or create
+an OpenTopography account, click **Get an API Key**, then click **Request API
+key** and paste it into the prompt.
+
+Add ESA WorldCover land cover for the same extent:
+
+```python
+scene.add_worldcover(opacity=0.55)
+scene.show()
+```
+
+The viewer includes opacity sliders for draped layers.
+
 With a YAML source config:
 
 ```python

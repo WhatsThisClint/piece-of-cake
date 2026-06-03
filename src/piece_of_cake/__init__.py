@@ -3,21 +3,26 @@
 from .inspectors import inspect_raster, inspect_vector
 from .providers import (
     DemProvider,
+    EsaWorldCoverProvider,
     LocalRasterProvider,
     OpenTopographyProvider,
+    RasterProvider,
     SourcesConfig,
     UrlRasterProvider,
     build_dem_provider,
     load_sources_config,
     setup_opentopography_key,
+    worldcover_tiles,
 )
 from .scene import TerrainScene
 from .styles import StyleProfile, auto_style, built_in_style, list_builtin_styles
 
 __all__ = [
     "DemProvider",
+    "EsaWorldCoverProvider",
     "LocalRasterProvider",
     "OpenTopographyProvider",
+    "RasterProvider",
     "SourcesConfig",
     "StyleProfile",
     "TerrainScene",
@@ -30,6 +35,7 @@ __all__ = [
     "list_builtin_styles",
     "load_sources_config",
     "setup_opentopography_key",
+    "worldcover_tiles",
 ]
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"

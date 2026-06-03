@@ -7,7 +7,7 @@ installed in lightweight environments for style/HTML work.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 import numpy as np
 
@@ -51,11 +51,11 @@ def read_raster_grid(
     """Read a raster into a WGS84 grid suitable for Plotly surfaces."""
 
     rasterio, from_bounds, reproject, transform_bounds, Resampling = require_rasterio()
-    path = Path(path)
+    source_path = _rasterio_path(path)
     height = height or width
     resampling_enum = getattr(Resampling, resampling)
 
-    with rasterio.open(path) as src:
+    with rasterio.open(source_path) as src:
         if bounds is None:
             min_lon, min_lat, max_lon, max_lat = transform_bounds(
                 src.crs, dst_crs, *src.bounds, densify_pts=21
@@ -74,6 +74,56 @@ def read_raster_grid(
             dst_nodata=np.nan,
             resampling=resampling_enum,
         )
+    return dst, bounds
+
+
+def read_raster_grid_mosaic(
+    paths: Sequence[str | Path],
+    *,
+    bounds: Bounds,
+    width: int = 350,
+    height: int | None = None,
+    band: int = 1,
+    dst_crs: str = "EPSG:4326",
+    resampling: str = "nearest",
+) -> tuple[np.ndarray, Bounds]:
+    """Read and merge raster tiles into a WGS84 grid."""
+
+    if not paths:
+        raise ValueError("At least one raster path is required")
+
+    rasterio, from_bounds, reproject, _transform_bounds, Resampling = require_rasterio()
+    from rasterio.merge import merge
+
+    height = height or width
+    resampling_enum = getattr(Resampling, resampling)
+    sources = []
+    try:
+        for path in paths:
+            sources.append(rasterio.open(_rasterio_path(path)))
+        source_crs = sources[0].crs
+        source_nodata = sources[0].nodata
+        mosaic, mosaic_transform = merge(
+            sources,
+            bounds=bounds.as_tuple() if str(source_crs).upper() == dst_crs else None,
+            indexes=band,
+        )
+        dst_transform = from_bounds(*bounds.as_tuple(), width=width, height=height)
+        dst = np.full((height, width), np.nan, dtype="float32")
+        reproject(
+            source=mosaic[0],
+            destination=dst,
+            src_transform=mosaic_transform,
+            src_crs=source_crs,
+            src_nodata=source_nodata,
+            dst_transform=dst_transform,
+            dst_crs=dst_crs,
+            dst_nodata=np.nan,
+            resampling=resampling_enum,
+        )
+    finally:
+        for src in sources:
+            src.close()
     return dst, bounds
 
 
@@ -106,3 +156,10 @@ def read_vector(path: str | Path, *, bounds: Bounds | None = None, layer: str | 
         ).iloc[0]
         gdf = gdf[gdf.geometry.intersects(bbox)]
     return gdf
+
+
+def _rasterio_path(path: str | Path) -> str | Path:
+    value = str(path)
+    if value.startswith(("http://", "https://", "s3://", "/vsicurl/")):
+        return value
+    return Path(path)

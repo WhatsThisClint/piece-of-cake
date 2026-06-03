@@ -4,11 +4,13 @@ from pathlib import Path
 import numpy as np
 
 from piece_of_cake import (
+    EsaWorldCoverProvider,
     OpenTopographyProvider,
     TerrainScene,
     build_dem_provider,
     load_sources_config,
     setup_opentopography_key,
+    worldcover_tiles,
 )
 from piece_of_cake.bounds import Bounds
 from piece_of_cake.io import require_rasterio
@@ -92,6 +94,41 @@ def test_opentopography_provider_downloads_and_caches(tmp_path):
     assert "API_Key=secret" in requested_urls[0]
 
 
+def test_worldcover_tiles_for_mumbai_bbox():
+    bounds = Bounds(72.78, 18.88, 73.05, 19.30)
+
+    assert worldcover_tiles(bounds) == ["N18E072"]
+
+
+def test_worldcover_tiles_cross_boundaries():
+    bounds = Bounds(71.9, 17.9, 75.2, 21.1)
+
+    assert worldcover_tiles(bounds) == [
+        "N15E069",
+        "N15E072",
+        "N15E075",
+        "N18E069",
+        "N18E072",
+        "N18E075",
+        "N21E069",
+        "N21E072",
+        "N21E075",
+    ]
+
+
+def test_worldcover_provider_resolves_latest_and_urls():
+    provider = EsaWorldCoverProvider()
+
+    assert provider.year == "2021"
+    assert provider.version == "200"
+    assert provider.tile_urls(Bounds(72.78, 18.88, 73.05, 19.30)) == [
+        (
+            "https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/"
+            "ESA_WorldCover_10m_2021_v200_N18E072_Map.tif"
+        )
+    ]
+
+
 def test_setup_opentopography_key_uses_existing_env_without_prompt(monkeypatch):
     monkeypatch.setenv("OPENTOPOGRAPHY_API_KEY", "already-set")
 
@@ -106,10 +143,18 @@ def test_setup_opentopography_key_uses_existing_env_without_prompt(monkeypatch):
 
 def test_setup_opentopography_key_prompts_and_stores_session_env(monkeypatch):
     monkeypatch.delenv("OPENTOPOGRAPHY_API_KEY", raising=False)
-    monkeypatch.setattr("piece_of_cake.providers.getpass.getpass", lambda prompt: " secret ")
+    prompts = []
+
+    def fake_prompt(prompt: str) -> str:
+        prompts.append(prompt)
+        return " secret "
+
+    monkeypatch.setattr("piece_of_cake.providers.getpass.getpass", fake_prompt)
 
     assert setup_opentopography_key() is True
     assert os.environ["OPENTOPOGRAPHY_API_KEY"] == "secret"
+    assert "https://portal.opentopography.org/myopentopo" in prompts[0]
+    assert "Get an API Key" in prompts[0]
 
 
 def test_setup_opentopography_key_rejects_empty_key(monkeypatch):

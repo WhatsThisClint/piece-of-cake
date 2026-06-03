@@ -45,8 +45,11 @@ setup_opentopography_key()
 ```
 
 The helper checks whether `OPENTOPOGRAPHY_API_KEY` is already set. If it is not
-set, it prompts with hidden input and stores the key only in the current Python
-session. It does not write the key to disk or return the key.
+set, it shows the MyOpenTopo dashboard link and the official OpenTopography API
+key instructions before prompting with hidden input. Sign in or create an
+OpenTopography account, click **Get an API Key**, then click **Request API
+key**. The helper stores the key only in the current Python session. It does not
+write the key to disk or return the key.
 
 ## YAML Accounts And Sources
 
@@ -135,3 +138,25 @@ scene.add_dem(provider=MyDemProvider())
 
 The provider interface lets a project connect to SRTM, Copernicus, institutional
 DEMs, cached local rasters, or private servers without changing the scene engine.
+
+## ESA WorldCover Land Cover
+
+After adding a DEM, fetch and drape ESA WorldCover land-cover classes for the
+same scene extent:
+
+```python
+scene.add_worldcover(opacity=0.55)
+scene.show()
+```
+
+By default, `year="latest"` resolves to ESA WorldCover 2021 v200. The provider
+reads the public AWS Cloud-Optimized GeoTIFF tiles for the current bounds and
+clips/resamples them to the terrain grid. It uses the built-in
+`esa_worldcover` categorical style.
+
+```python
+scene.add_worldcover(year="2021", opacity=0.45)
+```
+
+The HTML viewer includes layer opacity sliders, so users can adjust the
+WorldCover drape interactively without rerunning Python.

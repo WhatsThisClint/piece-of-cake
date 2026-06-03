@@ -1,4 +1,4 @@
-"""DEM provider registry and source configuration helpers."""
+"""Data provider registry and source configuration helpers."""
 
 from __future__ import annotations
 
@@ -12,13 +12,14 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
+from math import floor
 from pathlib import Path
 from typing import Any, Callable, Mapping, Protocol, TypeAlias
 
 import numpy as np
 
 from .bounds import Bounds
-from .io import read_raster_grid
+from .io import read_raster_grid, read_raster_grid_mosaic
 
 
 class DemProvider(Protocol):
@@ -28,10 +29,33 @@ class DemProvider(Protocol):
         """Return ``(dem_array, bounds)`` for the requested WGS84 bounds."""
 
 
+class RasterProvider(Protocol):
+    """Protocol for raster layer integrations."""
+
+    def fetch_raster(self, bounds: Bounds, *, width: int, height: int) -> tuple[np.ndarray, Bounds]:
+        """Return ``(raster_array, bounds)`` for the requested WGS84 bounds."""
+
+
 Downloader = Callable[[str, Path, Mapping[str, str], float], None]
 
 _ENV_PATTERN = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 _KNOWN_PROVIDERS = {"local", "opentopography", "url"}
+OPENTOPOGRAPHY_API_KEY_URL = "https://portal.opentopography.org/myopentopo"
+OPENTOPOGRAPHY_API_KEY_INSTRUCTIONS_URL = (
+    "https://opentopography.org/blog/introducing-api-keys-access-opentopography-global-datasets"
+)
+DEFAULT_OPENTOPOGRAPHY_KEY_PROMPT = (
+    "OpenTopography API key (hidden input).\n"
+    f"Get a free key: {OPENTOPOGRAPHY_API_KEY_URL}\n"
+    "Steps: sign in or create an OpenTopography account, open MyOpenTopo Dashboard, "
+    "click 'Get an API Key', then click 'Request API key'.\n"
+    f"Help: {OPENTOPOGRAPHY_API_KEY_INSTRUCTIONS_URL}\n"
+    "Paste key here: "
+)
+_WORLDCOVER_RELEASES = {
+    "2020": "100",
+    "2021": "200",
+}
 
 
 @dataclass(frozen=True)
@@ -175,11 +199,99 @@ class OpenTopographyProvider:
         return read_raster_grid(path, bounds=bounds, width=width, height=height)
 
 
+@dataclass
+class EsaWorldCoverProvider:
+    """Read clipped ESA WorldCover map tiles from the public AWS COG bucket."""
+
+    year: str = "latest"
+    version: str | None = None
+    base_url: str = "https://esa-worldcover.s3.eu-central-1.amazonaws.com"
+
+    def __post_init__(self) -> None:
+        year, version = resolve_worldcover_release(self.year, self.version)
+        self.year = year
+        self.version = version
+
+    def tile_urls(self, bounds: Bounds) -> list[str]:
+        return [self.tile_url(tile) for tile in worldcover_tiles(bounds)]
+
+    def tile_url(self, tile: str) -> str:
+        return (
+            f"{self.base_url}/v{self.version}/{self.year}/map/"
+            f"ESA_WorldCover_10m_{self.year}_v{self.version}_{tile}_Map.tif"
+        )
+
+    def fetch_raster(self, bounds: Bounds, *, width: int, height: int) -> tuple[np.ndarray, Bounds]:
+        urls = self.tile_urls(bounds)
+        if len(urls) == 1:
+            return read_raster_grid(
+                urls[0],
+                bounds=bounds,
+                width=width,
+                height=height,
+                resampling="nearest",
+            )
+        return read_raster_grid_mosaic(
+            urls,
+            bounds=bounds,
+            width=width,
+            height=height,
+            resampling="nearest",
+        )
+
+
+def resolve_worldcover_release(year: str = "latest", version: str | None = None) -> tuple[str, str]:
+    """Resolve ESA WorldCover ``latest`` to the newest known map release."""
+
+    resolved_year = str(year)
+    if resolved_year == "latest":
+        resolved_year = max(_WORLDCOVER_RELEASES)
+    if resolved_year not in _WORLDCOVER_RELEASES:
+        known = ", ".join(["latest", *_WORLDCOVER_RELEASES])
+        raise ValueError(f"Unsupported ESA WorldCover year {year!r}. Known values: {known}")
+    resolved_version = str(version) if version else _WORLDCOVER_RELEASES[resolved_year]
+    return resolved_year, resolved_version
+
+
+def worldcover_tiles(bounds: Bounds) -> list[str]:
+    """Return ESA WorldCover 3x3 degree tile names intersecting bounds."""
+
+    epsilon = 1e-10
+    min_lon = _tile_start(bounds.min_lon)
+    max_lon = _tile_start(bounds.max_lon - epsilon)
+    min_lat = _tile_start(bounds.min_lat)
+    max_lat = _tile_start(bounds.max_lat - epsilon)
+
+    tiles = []
+    lat = min_lat
+    while lat <= max_lat:
+        lon = min_lon
+        while lon <= max_lon:
+            tiles.append(f"{_format_lat(lat)}{_format_lon(lon)}")
+            lon += 3
+        lat += 3
+    return tiles
+
+
+def _tile_start(value: float) -> int:
+    return int(floor(value / 3) * 3)
+
+
+def _format_lat(value: int) -> str:
+    prefix = "N" if value >= 0 else "S"
+    return f"{prefix}{abs(value):02d}"
+
+
+def _format_lon(value: int) -> str:
+    prefix = "E" if value >= 0 else "W"
+    return f"{prefix}{abs(value):03d}"
+
+
 def setup_opentopography_key(
     api_key: str | None = None,
     *,
     env_var: str = "OPENTOPOGRAPHY_API_KEY",
-    prompt: str = "OpenTopography API key: ",
+    prompt: str = DEFAULT_OPENTOPOGRAPHY_KEY_PROMPT,
     overwrite: bool = False,
 ) -> bool:
     """Store an OpenTopography API key in the current Python session.

@@ -68,6 +68,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Raster layer to drape. Repeat for multiple layers.",
     )
     render.add_argument(
+        "--worldcover",
+        action="store_true",
+        help="Fetch and drape ESA WorldCover land-cover classes for the render bounds.",
+    )
+    render.add_argument(
+        "--worldcover-opacity",
+        type=float,
+        default=0.7,
+        help="Opacity for the ESA WorldCover drape.",
+    )
+    render.add_argument(
         "--vector",
         action="append",
         default=[],
@@ -140,6 +151,9 @@ def _render(args: argparse.Namespace) -> int:
 
     scene.vertical_exaggeration = args.vertical_exaggeration
 
+    if args.worldcover:
+        scene.add_worldcover(opacity=args.worldcover_opacity)
+
     for spec in args.raster:
         name, path = _parse_layer_spec(spec)
         scene.add_raster(name, path)
@@ -194,7 +208,7 @@ def _package_version() -> str:
     try:
         return version("piece-of-cake-terrain")
     except PackageNotFoundError:
-        return "0.1.4"
+        return "0.1.5"
 
 
 if __name__ == "__main__":

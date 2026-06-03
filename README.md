@@ -1,7 +1,7 @@
 # Piece of Cake
 
 [PyPI package](https://pypi.org/project/piece-of-cake-terrain/) |
-[GitHub release](https://github.com/WhatsThisClint/piece-of-cake/releases/tag/v0.1.4)
+[GitHub release](https://github.com/WhatsThisClint/piece-of-cake/releases/tag/v0.1.5)
 
 Piece of Cake builds interactive 3D terrain scenes from DEMs, rasters, vectors, and configurable geospatial styles.
 
@@ -14,6 +14,7 @@ It is deliberately focused on the 3D model. Give it a DEM and optional layers, t
 - Draws vector overlays from GeoPackages, shapefiles, GeoJSON, or other GeoPandas-readable formats.
 - Lets users toggle click-capture for latitude, longitude, and elevation.
 - Lets users change vertical exaggeration inside the HTML viewer.
+- Fetches and drapes ESA WorldCover land-cover classes for the selected extent.
 - Exports standalone HTML.
 - Supports custom style profiles for unknown layers.
 - Helps inspect unknown raster/vector layers before styling them.
@@ -54,7 +55,7 @@ pip install "piece-of-cake-terrain[geo,places]"
 From GitHub source:
 
 ```bash
-pip install "piece-of-cake-terrain[geo,places,providers] @ git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.4"
+pip install "piece-of-cake-terrain[geo,places,providers] @ git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.5"
 ```
 
 For an isolated terminal command:
@@ -162,7 +163,19 @@ from piece_of_cake import setup_opentopography_key
 setup_opentopography_key()
 ```
 
-This stores the key only in the current Python session.
+The prompt includes a direct link to the MyOpenTopo dashboard, where users can
+sign in, click **Get an API Key**, and then click **Request API key**. This
+stores the key only in the current Python session.
+
+Add ESA WorldCover land cover over the same extent:
+
+```python
+scene.add_worldcover(opacity=0.55)
+scene.show()
+```
+
+`year="latest"` currently resolves to ESA WorldCover 2021 v200, the newest
+WorldCover map release available from ESA.
 
 Use an IHEWAcollect-style YAML config for accounts and named sources:
 

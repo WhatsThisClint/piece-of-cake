@@ -69,6 +69,9 @@ Set an API key when using OpenTopography datasets that require one:
 set OPENTOPOGRAPHY_API_KEY=your-key-here
 ```
 
+You can request a free key from the MyOpenTopo dashboard:
+https://portal.opentopography.org/myopentopo
+
 Fetch a DEM from a bounding box:
 
 ```bash
@@ -76,6 +79,17 @@ piece-of-cake render ^
   --bounds 76.1 18.0 76.4 18.3 ^
   --dem-source opentopography ^
   --out terrain.html
+```
+
+Fetch a DEM and drape ESA WorldCover land cover for the same extent:
+
+```bash
+piece-of-cake render ^
+  --bounds 72.78 18.88 73.05 19.30 ^
+  --dem-source opentopography ^
+  --worldcover ^
+  --worldcover-opacity 0.55 ^
+  --out mumbai_worldcover.html
 ```
 
 Fetch from a place name:
