@@ -36,6 +36,18 @@ scene.add_dem(source="auto")
 OpenTopography API keys can be provided with the `OPENTOPOGRAPHY_API_KEY`
 environment variable.
 
+In JupyterLab or Colab, use the built-in hidden prompt:
+
+```python
+from piece_of_cake import setup_opentopography_key
+
+setup_opentopography_key()
+```
+
+The helper checks whether `OPENTOPOGRAPHY_API_KEY` is already set. If it is not
+set, it prompts with hidden input and stores the key only in the current Python
+session. It does not write the key to disk or return the key.
+
 ## YAML Accounts And Sources
 
 For IHEWAcollect-style workflows, keep credentials and source choices in a YAML

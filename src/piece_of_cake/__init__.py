@@ -9,6 +9,7 @@ from .providers import (
     UrlRasterProvider,
     build_dem_provider,
     load_sources_config,
+    setup_opentopography_key,
 )
 from .scene import TerrainScene
 from .styles import StyleProfile, auto_style, built_in_style, list_builtin_styles
@@ -28,6 +29,7 @@ __all__ = [
     "inspect_vector",
     "list_builtin_styles",
     "load_sources_config",
+    "setup_opentopography_key",
 ]
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"

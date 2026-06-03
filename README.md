@@ -1,7 +1,7 @@
 # Piece of Cake
 
 [PyPI package](https://pypi.org/project/piece-of-cake-terrain/) |
-[GitHub release](https://github.com/WhatsThisClint/piece-of-cake/releases/tag/v0.1.2)
+[GitHub release](https://github.com/WhatsThisClint/piece-of-cake/releases/tag/v0.1.3)
 
 Piece of Cake builds interactive 3D terrain scenes from DEMs, rasters, vectors, and configurable geospatial styles.
 
@@ -53,7 +53,7 @@ pip install "piece-of-cake-terrain[geo,places]"
 From GitHub source:
 
 ```bash
-pip install "piece-of-cake-terrain[geo,places,providers] @ git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.2"
+pip install "piece-of-cake-terrain[geo,places,providers] @ git+https://github.com/WhatsThisClint/piece-of-cake.git@v0.1.3"
 ```
 
 For an isolated terminal command:
@@ -152,6 +152,16 @@ scene = TerrainScene.from_bbox(76.1, 18.0, 76.4, 18.3)
 scene.add_dem(source="opentopography", width=500)
 scene.to_html("terrain.html")
 ```
+
+In JupyterLab or Colab, prompt for the OpenTopography key without showing it:
+
+```python
+from piece_of_cake import setup_opentopography_key
+
+setup_opentopography_key()
+```
+
+This stores the key only in the current Python session.
 
 Use an IHEWAcollect-style YAML config for accounts and named sources:
 

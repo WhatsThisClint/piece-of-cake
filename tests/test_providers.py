@@ -1,8 +1,15 @@
+import os
 from pathlib import Path
 
 import numpy as np
 
-from piece_of_cake import OpenTopographyProvider, TerrainScene, build_dem_provider, load_sources_config
+from piece_of_cake import (
+    OpenTopographyProvider,
+    TerrainScene,
+    build_dem_provider,
+    load_sources_config,
+    setup_opentopography_key,
+)
 from piece_of_cake.bounds import Bounds
 from piece_of_cake.io import require_rasterio
 
@@ -83,6 +90,38 @@ def test_opentopography_provider_downloads_and_caches(tmp_path):
     assert "west=76.0" in requested_urls[0]
     assert "east=76.1" in requested_urls[0]
     assert "API_Key=secret" in requested_urls[0]
+
+
+def test_setup_opentopography_key_uses_existing_env_without_prompt(monkeypatch):
+    monkeypatch.setenv("OPENTOPOGRAPHY_API_KEY", "already-set")
+
+    def fail_prompt(prompt: str) -> str:
+        raise AssertionError("prompt should not be called when key already exists")
+
+    monkeypatch.setattr("piece_of_cake.providers.getpass.getpass", fail_prompt)
+
+    assert setup_opentopography_key() is True
+    assert os.environ["OPENTOPOGRAPHY_API_KEY"] == "already-set"
+
+
+def test_setup_opentopography_key_prompts_and_stores_session_env(monkeypatch):
+    monkeypatch.delenv("OPENTOPOGRAPHY_API_KEY", raising=False)
+    monkeypatch.setattr("piece_of_cake.providers.getpass.getpass", lambda prompt: " secret ")
+
+    assert setup_opentopography_key() is True
+    assert os.environ["OPENTOPOGRAPHY_API_KEY"] == "secret"
+
+
+def test_setup_opentopography_key_rejects_empty_key(monkeypatch):
+    monkeypatch.delenv("OPENTOPOGRAPHY_API_KEY", raising=False)
+    monkeypatch.setattr("piece_of_cake.providers.getpass.getpass", lambda prompt: " ")
+
+    try:
+        setup_opentopography_key()
+    except ValueError as exc:
+        assert "cannot be empty" in str(exc)
+    else:
+        raise AssertionError("empty API key should fail")
 
 
 def _write_test_dem(path: Path) -> None:

@@ -56,6 +56,10 @@ piece-of-cake render --dem dem.tif --out terrain.html
 Fetch a DEM from a configured provider instead of passing a DEM file:
 
 ```python
+from piece_of_cake import setup_opentopography_key
+
+setup_opentopography_key()
+
 scene = TerrainScene.from_bbox(76.1, 18.0, 76.4, 18.3)
 scene.add_dem(source="opentopography", width=500)
 scene.to_html("terrain.html")

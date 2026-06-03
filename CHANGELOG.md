@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3 - 2026-06-03
+
+- Added `setup_opentopography_key()` for JupyterLab and Colab workflows.
+- The helper checks for an existing key, prompts with hidden input only when
+  needed, and stores the key only in the current Python session.
+
 ## 0.1.2 - 2026-06-03
 
 - Added DEM source configs inspired by account/source registry workflows.

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import getpass
 import json
 import os
 import re
@@ -172,6 +173,32 @@ class OpenTopographyProvider:
             path.parent.mkdir(parents=True, exist_ok=True)
             self.downloader(url, path, self.headers or {}, self.timeout)
         return read_raster_grid(path, bounds=bounds, width=width, height=height)
+
+
+def setup_opentopography_key(
+    api_key: str | None = None,
+    *,
+    env_var: str = "OPENTOPOGRAPHY_API_KEY",
+    prompt: str = "OpenTopography API key: ",
+    overwrite: bool = False,
+) -> bool:
+    """Store an OpenTopography API key in the current Python session.
+
+    This is intended for JupyterLab, Colab, and other notebook workflows. It
+    checks whether ``env_var`` is already set, prompts with a hidden input only
+    when needed, and stores the key in ``os.environ`` for the current Python
+    process. It does not write the key to disk and does not return the key.
+    """
+
+    if os.environ.get(env_var) and not overwrite:
+        return True
+
+    key = api_key if api_key is not None else getpass.getpass(prompt)
+    key = str(key).strip()
+    if not key:
+        raise ValueError("OpenTopography API key cannot be empty")
+    os.environ[env_var] = key
+    return True
 
 
 def load_sources_config(config: ConfigInput) -> SourcesConfig:
